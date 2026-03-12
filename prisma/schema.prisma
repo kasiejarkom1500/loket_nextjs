@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  queues    Queue[]
+}
+
+model Counter {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  queues    Queue[]
+  users     User[]
+  assignments Assignment[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nipLama   String   @map("nip_lama")
+  username  String   @unique
+  password  String
+  nama      String
+  counterId Int?
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  counter Counter? @relation(fields: [counterId], references: [id])
+  assignments Assignment[]
+}
+
+model Queue {
+  id         Int         @id @default(autoincrement())
+  number     String
+  status     QueueStatus @default(PENDING)
+  visitorId  Int?
+  staffPurposeDetail String? @default("")
+  serviceId  Int
+  counterId  Int?
+  createdAt  DateTime    @default(now())
+  calledAt   DateTime?
+  completedAt DateTime?
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+  counter Counter? @relation(fields: [counterId], references: [id])
+  rating  Rating?
+}
+
+model Assignment {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  role      AssignmentRole
+  shift     Shift
+  date      DateTime
+  counterId Int?
+  createdAt DateTime       @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  counter Counter? @relation(fields: [counterId], references: [id])
+
+  @@unique([userId, date, shift])
+}
+
+model Visitor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  origin    String
+  purpose   String
+  createdAt DateTime @default(now())
+  queues    Queue[]
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  queueId   Int      @unique
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  queue Queue @relation(fields: [queueId], references: [id])
+}
+
+enum QueueStatus {
+  PENDING
+  CALLED
+  COMPLETED
+}
+
+enum AssignmentRole {
+  LAYANAN_PUBLIK
+  PERMINTAAN_DATA
+}
+
+enum Shift {
+  PAGI
+  SIANG
+}

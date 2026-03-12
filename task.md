@@ -1,0 +1,55 @@
+# Queue Management System (Sistem Antrian)
+
+- [x] Planning Phase
+  - [x] Create project plan
+  - [x] Await user approval
+- [/] Setup Project
+  - [x] Initialize Next.js project
+  - [x] Install dependencies (Prisma, SWR, Tailwind, Firebase, etc.)
+  - [x] Initialize Prisma and configure MySQL connection
+- [/] Database Schema
+  - [x] Define `Service`, `Counter`, `Queue`, `Rating`, `User`, `Assignment`, `Visitor` models
+  - [x] Push schema to MySQL database
+  - [x] Seed initial data (Services and Counters)
+- [/] API Endpoints
+  - [x] `GET /api/services` - List available services
+  - [x] `GET /api/counters` - List counters
+  - [x] `POST /api/queue/generate` - Generate new queue number
+  - [x] `GET /api/queue/current` - Get current active/called queue numbers
+  - [x] `POST /api/queue/call` - Counter staff calling a number
+  - [x] `POST /api/queue/update-service` - Change service before call
+  - [x] `POST /api/queue/update-staff-purpose` - Save staff purpose detail
+  - [x] `POST /api/queue/complete` - Mark queue as complete
+  - [x] `POST /api/rating` - Submit visitor rating
+  - [x] `POST /api/admin/assignments/import` - Bulk import assignments
+  - [x] `POST /api/admin/users` - Create user
+  - [x] `PUT /api/admin/users` - Update user
+  - [x] `DELETE /api/admin/users` - Delete user
+  - [x] `POST /api/admin/assignments` - Create assignment
+  - [x] `PUT /api/admin/assignments` - Update assignment
+  - [x] `DELETE /api/admin/assignments` - Delete assignment
+- [/] Realtime Updates (Firebase Realtime Database)
+  - [x] Client subscribe for `/display` and `/loket/[id]`
+  - [x] Admin broadcast updates on call/complete
+  - [x] Broadcast updates on new queue and service changes
+- [/] Frontend Pages
+  - [x] `/kiosk` - Kiosk page to select service and get queue number
+  - [x] `/display` - Wall display page showing called queues
+  - [x] `/loket/[id]` - Staff dashboard with pending table + visitor details
+  - [x] `/rating` - Page for visitors to submit rating after being served
+  - [x] `/login` - Login page with mode selection
+  - [x] `/admin/assignments` - Manage assignments (CRUD + import)
+  - [x] `/admin/users` - Manage users (CRUD)
+- [/] Authentication
+  - [x] User model with nip_lama, username, password, nama
+  - [x] Login page and session cookie
+  - [x] Protect `/loket` and queue call/complete endpoints
+  - [x] Admin mode login + admin navigation
+- [/] Assignments & Admin
+  - [x] Assignment model with shift + role
+  - [x] Admin page for managing assignments
+  - [x] Enforce assignment-based role in runtime
+  - [x] Assignment import via Excel template
+- [ ] Final Testing & Launch
+  - [ ] Test workflow from printing to calling to rating
+  - [ ] Verify wall display updates in real-time + audio cue

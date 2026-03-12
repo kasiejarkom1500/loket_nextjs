@@ -40,6 +40,9 @@
   - [x] `/login` - Login page with mode selection
   - [x] `/admin/assignments` - Manage assignments (CRUD + import)
   - [x] `/admin/users` - Manage users (CRUD)
+  - [x] `/admin/services` - Manage services + colors
+  - [x] `/admin/visitors` - Visitor list + Excel export
+  - [x] `/admin/rating-recap` - Monthly rating recap + Excel export
 - [/] Authentication
   - [x] User model with nip_lama, username, password, nama
   - [x] Login page and session cookie
@@ -50,6 +53,9 @@
   - [x] Admin page for managing assignments
   - [x] Enforce assignment-based role in runtime
   - [x] Assignment import via Excel template
+  - [x] Service color config on kiosk
+  - [x] Visitor export with staff purpose detail
+  - [x] Rating recap per month (by role)
 - [ ] Final Testing & Launch
   - [ ] Test workflow from printing to calling to rating
   - [ ] Verify wall display updates in real-time + audio cue

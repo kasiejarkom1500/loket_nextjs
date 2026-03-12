@@ -11,6 +11,7 @@ model Service {
   id        Int      @id @default(autoincrement())
   code      String   @unique
   name      String
+  color     String?
   createdAt DateTime @default(now())
   queues    Queue[]
 }
@@ -36,6 +37,9 @@ model User {
 
   counter Counter? @relation(fields: [counterId], references: [id])
   assignments Assignment[]
+  queuesAsPublicOfficer Queue[] @relation("PublicOfficer")
+  queuesAsDataOfficer Queue[] @relation("DataOfficer")
+  attendances Attendance[]
 }
 
 model Queue {
@@ -44,6 +48,9 @@ model Queue {
   status     QueueStatus @default(PENDING)
   visitorId  Int?
   staffPurposeDetail String? @default("")
+  publicOfficerId Int?
+  dataOfficerId Int?
+  securityOfficerId Int?
   serviceId  Int
   counterId  Int?
   createdAt  DateTime    @default(now())
@@ -53,6 +60,9 @@ model Queue {
   visitor Visitor? @relation(fields: [visitorId], references: [id])
   service Service @relation(fields: [serviceId], references: [id])
   counter Counter? @relation(fields: [counterId], references: [id])
+  publicOfficer User? @relation("PublicOfficer", fields: [publicOfficerId], references: [id])
+  dataOfficer User? @relation("DataOfficer", fields: [dataOfficerId], references: [id])
+  securityOfficer SecurityOfficer? @relation(fields: [securityOfficerId], references: [id])
   rating  Rating?
 }
 
@@ -85,10 +95,48 @@ model Rating {
   id        Int      @id @default(autoincrement())
   queueId   Int      @unique
   score     Int
+  publicOfficerScore Int?
+  dataOfficerScore Int?
+  securityOfficerScore Int?
   comment   String?
   createdAt DateTime @default(now())
 
   queue Queue @relation(fields: [queueId], references: [id])
+}
+
+model SecurityOfficer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  queues    Queue[]
+}
+
+model Attendance {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  role      AttendanceRole
+  shift     Shift
+  date      DateTime
+  checkInAt DateTime?
+  checkOutAt DateTime?
+
+  publicNondataOffline Int?
+  publicNondataOnline Int?
+  publicComplaintsOffline Int?
+  publicSkdCount Int?
+  publicNotes String?
+
+  dataRequestOffline Int?
+  dataConsultOffline Int?
+  dataRequestOnline Int?
+  dataConsultOnline Int?
+  dataNotes String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date, shift, role])
 }
 
 enum QueueStatus {
@@ -105,4 +153,9 @@ enum AssignmentRole {
 enum Shift {
   PAGI
   SIANG
+}
+
+enum AttendanceRole {
+  LAYANAN_PUBLIK
+  PERMINTAAN_DATA
 }

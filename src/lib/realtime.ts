@@ -21,6 +21,9 @@ type CounterState = {
   visitorOrigin: string;
   visitorPurpose: string;
   staffPurposeDetail: string;
+  publicOfficerName: string;
+  dataOfficerName: string;
+  securityOfficerName: string;
 };
 
 type PendingQueue = {
@@ -46,12 +49,26 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
     await Promise.all([
       prisma.queue.findMany({
         where: { status: "CALLED" },
-        include: { counter: true, service: true, visitor: true },
+        include: {
+          counter: true,
+          service: true,
+          visitor: true,
+          publicOfficer: true,
+          dataOfficer: true,
+          securityOfficer: true,
+        },
         orderBy: { calledAt: "desc" },
       }),
       prisma.queue.findMany({
         where: { calledAt: { not: null } },
-        include: { counter: true, service: true, visitor: true },
+        include: {
+          counter: true,
+          service: true,
+          visitor: true,
+          publicOfficer: true,
+          dataOfficer: true,
+          securityOfficer: true,
+        },
         orderBy: { calledAt: "desc" },
         take: 10,
       }),
@@ -81,6 +98,9 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
       visitorOrigin: queue.visitor?.origin ?? "-",
       visitorPurpose: queue.visitor?.purpose ?? "-",
       staffPurposeDetail: queue.staffPurposeDetail ?? "",
+      publicOfficerName: queue.publicOfficer?.nama ?? "-",
+      dataOfficerName: queue.dataOfficer?.nama ?? "-",
+      securityOfficerName: queue.securityOfficer?.name ?? "-",
     });
   }
 

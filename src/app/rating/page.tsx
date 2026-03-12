@@ -1,26 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { onValue, ref } from "firebase/database";
+import { firebaseClientDb, firebaseClientReady } from "@/lib/firebase-client";
+
+type CompletedQueue = {
+  id: number;
+  number: string;
+  visitorName: string;
+  publicOfficerName: string;
+  dataOfficerName: string | null;
+  securityOfficerName: string;
+  hasDataOfficer: boolean;
+};
 
 export default function RatingPage() {
-  const [queueId, setQueueId] = useState("");
-  const [score, setScore] = useState<number | null>(null);
+  const [queues, setQueues] = useState<CompletedQueue[]>([]);
+  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null);
+  const [overallScore, setOverallScore] = useState<number | null>(null);
+  const [publicScore, setPublicScore] = useState<number | null>(null);
+  const [dataScore, setDataScore] = useState<number | null>(null);
+  const [securityScore, setSecurityScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">(
     "idle",
   );
 
+  const selectedQueue = queues.find((queue) => queue.id === selectedQueueId);
+
+  const loadQueues = async () => {
+    const response = await fetch("/api/queue/completed-today");
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setQueues(data.queues ?? []);
+  };
+
+  useEffect(() => {
+    loadQueues();
+  }, []);
+
+  useEffect(() => {
+    if (!firebaseClientReady || !firebaseClientDb) {
+      return;
+    }
+    const stateRef = ref(firebaseClientDb, "state");
+    const unsubscribe = onValue(stateRef, () => {
+      loadQueues();
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleSubmit = async () => {
-    if (!queueId || !score) {
+    if (!selectedQueueId || !overallScore || !publicScore || !securityScore) {
+      return;
+    }
+    if (selectedQueue?.hasDataOfficer && !dataScore) {
       return;
     }
     setStatus("sending");
     const response = await fetch("/api/rating", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId: Number(queueId), score, comment }),
+      body: JSON.stringify({
+        queueId: selectedQueueId,
+        score: overallScore,
+        publicOfficerScore: publicScore,
+        dataOfficerScore: selectedQueue?.hasDataOfficer ? dataScore : null,
+        securityOfficerScore: securityScore,
+        comment,
+      }),
     });
     setStatus(response.ok ? "done" : "error");
+    if (response.ok) {
+      setQueues((prev) => prev.filter((queue) => queue.id !== selectedQueueId));
+      setSelectedQueueId(null);
+      setOverallScore(null);
+      setPublicScore(null);
+      setDataScore(null);
+      setSecurityScore(null);
+      setComment("");
+    }
   };
 
   return (
@@ -34,42 +95,110 @@ export default function RatingPage() {
             Beri nilai layanan kami
           </h1>
           <p className="mt-3 text-sm text-zinc-600">
-            Masukkan ID antrian dan pilih skor 1-5.
+            Pilih nama pengunjung yang sudah dilayani lalu beri skor 1-5.
           </p>
         </header>
 
         <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
           <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-            ID Antrian
+            Pilih Antrian
           </label>
-          <input
-            type="number"
-            value={queueId}
-            onChange={(event) => setQueueId(event.target.value)}
+          <select
+            value={selectedQueueId ?? ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedQueueId(value ? Number(value) : null);
+            }}
             className="mt-3 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-            placeholder="Contoh: 12"
-          />
+          >
+            <option value="">Pilih pengunjung yang sudah dilayani</option>
+            {queues.map((queue) => (
+              <option key={queue.id} value={queue.id}>
+                {queue.number} - {queue.visitorName}
+              </option>
+            ))}
+          </select>
 
-          <div className="mt-6">
-            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-              Skor
+          {queues.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-500">
+              Belum ada antrian selesai hari ini.
             </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setScore(value)}
-                  className={`h-12 w-12 rounded-full border text-sm font-semibold transition ${
-                    score === value
-                      ? "border-amber-500 bg-amber-100 text-amber-900"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
+          ) : null}
+
+          {selectedQueue ? (
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white/90 px-4 py-3 text-sm text-zinc-700">
+              <p>
+                Petugas Layanan Publik:{" "}
+                <span className="font-semibold text-zinc-900">
+                  {selectedQueue.publicOfficerName}
+                </span>
+              </p>
+              {selectedQueue.dataOfficerName ? (
+                <p>
+                  Petugas Permintaan Data:{" "}
+                  <span className="font-semibold text-zinc-900">
+                    {selectedQueue.dataOfficerName}
+                  </span>
+                </p>
+              ) : null}
+              <p>
+                Satpam:{" "}
+                <span className="font-semibold text-zinc-900">
+                  {selectedQueue.securityOfficerName}
+                </span>
+              </p>
             </div>
+          ) : null}
+
+          <div className="mt-6 space-y-6">
+            {[
+              {
+                label: "Pelayanan Umum",
+                value: overallScore,
+                setValue: setOverallScore,
+              },
+              {
+                label: "Petugas Layanan Publik",
+                value: publicScore,
+                setValue: setPublicScore,
+              },
+              ...(selectedQueue?.hasDataOfficer
+                ? [
+                    {
+                      label: "Petugas Permintaan Data",
+                      value: dataScore,
+                      setValue: setDataScore,
+                    },
+                  ]
+                : []),
+              {
+                label: "Satpam",
+                value: securityScore,
+                setValue: setSecurityScore,
+              },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  {item.label}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={`${item.label}-${value}`}
+                      type="button"
+                      onClick={() => item.setValue(value)}
+                      className={`h-12 w-12 rounded-full border text-sm font-semibold transition ${
+                        item.value === value
+                          ? "border-amber-500 bg-amber-100 text-amber-900"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="mt-6">

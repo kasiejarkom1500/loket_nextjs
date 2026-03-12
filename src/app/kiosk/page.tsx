@@ -6,6 +6,7 @@ type Service = {
   id: number;
   code: string;
   name: string;
+  color: string | null;
 };
 
 type QueueResponse = {
@@ -126,6 +127,12 @@ export default function KioskPage() {
     const data: QueueResponse = await response.json();
     setTicket(data.queue);
     setIsModalOpen(false);
+    setForm({
+      visitorName: "",
+      visitorPhone: "",
+      visitorOrigin: "",
+      visitorPurpose: "",
+    });
   };
 
   return (
@@ -159,7 +166,12 @@ export default function KioskPage() {
         </header>
 
         <section className="no-print grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {services.map((service, index) => (
+          {services.map((service, index) => {
+            const fallbackColor = serviceColors[index % serviceColors.length];
+            const colorClass = service.color
+              ? "text-white"
+              : `bg-gradient-to-br ${fallbackColor}`;
+            return (
             <button
               key={service.id}
               type="button"
@@ -168,9 +180,10 @@ export default function KioskPage() {
                 setFormError(null);
                 setIsModalOpen(true);
               }}
-              className={`group relative min-h-[180px] rounded-3xl border border-white/70 bg-gradient-to-br px-8 py-8 text-left shadow-lg transition hover:-translate-y-1 ${
-                serviceColors[index % serviceColors.length]
-              } ${selectedService === service.id ? "ring-4 ring-amber-200" : ""}`}
+              className={`group relative min-h-[180px] rounded-3xl border border-white/70 px-8 py-8 text-left shadow-lg transition hover:-translate-y-1 ${colorClass} ${
+                selectedService === service.id ? "ring-4 ring-amber-200" : ""
+              }`}
+              style={service.color ? { backgroundColor: service.color } : undefined}
             >
               <div className="flex h-full flex-col justify-between">
                 <div>
@@ -186,7 +199,8 @@ export default function KioskPage() {
                 </p>
               </div>
             </button>
-          ))}
+          );
+          })}
         </section>
 
         <div className="no-print flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

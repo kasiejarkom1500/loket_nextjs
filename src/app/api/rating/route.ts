@@ -5,16 +5,32 @@ export async function POST(request: Request) {
   const body = await request.json();
   const queueId = Number(body?.queueId);
   const score = Number(body?.score);
+  const publicOfficerScore = Number(body?.publicOfficerScore);
+  const dataOfficerScoreRaw = body?.dataOfficerScore;
+  const securityOfficerScore = Number(body?.securityOfficerScore);
   const comment = typeof body?.comment === "string" ? body.comment : null;
 
-  if (!queueId || Number.isNaN(score)) {
+  if (
+    !queueId ||
+    Number.isNaN(score) ||
+    Number.isNaN(publicOfficerScore) ||
+    Number.isNaN(securityOfficerScore)
+  ) {
     return NextResponse.json(
-      { error: "queueId and score are required" },
+      { error: "queueId and all scores are required" },
       { status: 400 },
     );
   }
 
-  if (score < 1 || score > 5) {
+  const dataOfficerScore =
+    dataOfficerScoreRaw === null || dataOfficerScoreRaw === undefined
+      ? null
+      : Number(dataOfficerScoreRaw);
+  const scores = [score, publicOfficerScore, securityOfficerScore];
+  if (dataOfficerScore !== null) {
+    scores.push(dataOfficerScore);
+  }
+  if (scores.some((value) => value < 1 || value > 5)) {
     return NextResponse.json({ error: "score must be 1-5" }, { status: 400 });
   }
 
@@ -30,6 +46,9 @@ export async function POST(request: Request) {
     data: {
       queueId,
       score,
+      publicOfficerScore,
+      dataOfficerScore: dataOfficerScore ?? null,
+      securityOfficerScore,
       comment,
     },
   });

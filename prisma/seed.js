@@ -4,8 +4,8 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 const services = [
-  { code: "A", name: "Customer Service" },
-  { code: "B", name: "Teller" },
+  { code: "A", name: "Customer Service", color: "#f59e0b" },
+  { code: "B", name: "Teller", color: "#2563eb" },
 ];
 
 const counters = [{ name: "Loket 1" }, { name: "Loket 2" }];
@@ -14,7 +14,7 @@ async function main() {
   for (const service of services) {
     await prisma.service.upsert({
       where: { code: service.code },
-      update: { name: service.name },
+      update: { name: service.name, color: service.color },
       create: service,
     });
   }

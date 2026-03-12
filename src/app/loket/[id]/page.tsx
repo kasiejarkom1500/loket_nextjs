@@ -15,6 +15,9 @@ type CounterState = {
   visitorOrigin: string;
   visitorPurpose: string;
   staffPurposeDetail: string;
+  publicOfficerName: string;
+  dataOfficerName: string;
+  securityOfficerName: string;
 };
 
 type RealtimeState = {
@@ -39,15 +42,64 @@ export default function LoketPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [profile, setProfile] = useState<{
+    nama: string;
+    username: string;
+    role: string;
+  } | null>(null);
   const [services, setServices] = useState<Array<{ id: number; name: string }>>(
     [],
   );
+  const [dataOfficers, setDataOfficers] = useState<
+    Array<{ id: number; nama: string }>
+  >([]);
+  const [securityOfficers, setSecurityOfficers] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
+  const [defaultDataOfficerId, setDefaultDataOfficerId] = useState("");
+  const [defaultSecurityOfficerId, setDefaultSecurityOfficerId] = useState("");
+  const [selectedDataOfficer, setSelectedDataOfficer] = useState<
+    Record<number, string>
+  >({});
+  const [selectedSecurityOfficer, setSelectedSecurityOfficer] = useState<
+    Record<number, string>
+  >({});
+  const [attendance, setAttendance] = useState<{
+    checkInAt: string | null;
+    checkOutAt: string | null;
+  } | null>(null);
+  const [showDefaults, setShowDefaults] = useState(false);
+  const [showOfficerDetail, setShowOfficerDetail] = useState(true);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [publicCheckout, setPublicCheckout] = useState({
+    publicNondataOffline: "",
+    publicNondataOnline: "",
+    publicComplaintsOffline: "",
+    publicSkdCount: "",
+    publicNotes: "",
+  });
   const [staffNote, setStaffNote] = useState("");
+  const [activeTab, setActiveTab] = useState<"queue" | "attendance">("queue");
   const currentQueue = useMemo(
     () => (state?.counters ? state.counters[String(counterId)] : null),
     [state, counterId],
   );
   const [lastQueueId, setLastQueueId] = useState<number | null>(null);
+  const isDataService = (serviceName: string) =>
+    serviceName.toLowerCase().includes("permintaan data");
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const response = await fetch("/api/auth/me");
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      setProfile(data.user ?? null);
+    };
+    loadProfile();
+  }, []);
 
   useEffect(() => {
     if (firebaseClientReady && firebaseClientDb) {
@@ -81,6 +133,36 @@ export default function LoketPage() {
       setServices(data.services ?? []);
     };
     loadServices();
+  }, []);
+
+  useEffect(() => {
+    const loadAttendance = async () => {
+      const response = await fetch("/api/attendance/status");
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      setAttendance(data.attendance ?? null);
+    };
+    loadAttendance();
+  }, []);
+
+  useEffect(() => {
+    const loadOfficers = async () => {
+      const [dataResponse, securityResponse] = await Promise.all([
+        fetch("/api/assignments/active?role=PERMINTAAN_DATA"),
+        fetch("/api/security-officers"),
+      ]);
+      if (dataResponse.ok) {
+        const data = await dataResponse.json();
+        setDataOfficers(data.users ?? []);
+      }
+      if (securityResponse.ok) {
+        const data = await securityResponse.json();
+        setSecurityOfficers(data.securityOfficers ?? []);
+      }
+    };
+    loadOfficers();
   }, []);
 
   useEffect(() => {
@@ -121,14 +203,41 @@ export default function LoketPage() {
     if (!counterId) {
       return;
     }
+    const nextPending = state?.pending?.reduce((earliest, queue) => {
+      if (!earliest) {
+        return queue;
+      }
+      return new Date(queue.createdAt) < new Date(earliest.createdAt)
+        ? queue
+        : earliest;
+    }, null as RealtimeState["pending"][number] | null);
+    let dataOfficerIdToSend: number | null = null;
+    if (nextPending && isDataService(nextPending.serviceName)) {
+      const dataOfficerId = defaultDataOfficerId;
+      if (!dataOfficerId) {
+        setToast("Petugas permintaan data wajib dipilih.");
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      dataOfficerIdToSend = Number(dataOfficerId);
+    }
     setLoading(true);
     const response = await fetch("/api/queue/call", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ counterId }),
+      body: JSON.stringify({
+        counterId,
+        dataOfficerId: dataOfficerIdToSend,
+        securityOfficerId: defaultSecurityOfficerId
+          ? Number(defaultSecurityOfficerId)
+          : null,
+      }),
     });
     setLoading(false);
     if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setToast(data.error ?? "Gagal memanggil antrian.");
+      setTimeout(() => setToast(null), 3000);
       return;
     }
     if (!firebaseClientReady) {
@@ -159,14 +268,40 @@ export default function LoketPage() {
     if (!counterId) {
       return;
     }
+    const dataOfficerId =
+      selectedDataOfficer[queueId] || defaultDataOfficerId;
+    const targetQueue = state?.pending?.find(
+      (queue) => queue.queueId === queueId,
+    );
+    const shouldUseDataOfficer =
+      targetQueue && isDataService(targetQueue.serviceName);
+    if (shouldUseDataOfficer && !dataOfficerId) {
+      setToast("Petugas permintaan data wajib dipilih.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
     setLoading(true);
     const response = await fetch("/api/queue/call", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ counterId, queueId }),
+      body: JSON.stringify({
+        counterId,
+        queueId,
+        dataOfficerId: shouldUseDataOfficer && dataOfficerId
+          ? Number(dataOfficerId)
+          : null,
+        securityOfficerId: selectedSecurityOfficer[queueId]
+          ? Number(selectedSecurityOfficer[queueId])
+          : defaultSecurityOfficerId
+            ? Number(defaultSecurityOfficerId)
+            : null,
+      }),
     });
     setLoading(false);
     if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setToast(data.error ?? "Gagal mengambil antrian.");
+      setTimeout(() => setToast(null), 3000);
       return;
     }
     if (!firebaseClientReady) {
@@ -212,6 +347,48 @@ export default function LoketPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleCheckIn = async () => {
+    setAttendanceLoading(true);
+    const response = await fetch("/api/attendance/check-in", {
+      method: "POST",
+    });
+    setAttendanceLoading(false);
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setAttendance(data.attendance ?? null);
+    setToast("Presensi datang tersimpan.");
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleCheckOut = async () => {
+    if (
+      !publicCheckout.publicNondataOffline ||
+      !publicCheckout.publicNondataOnline ||
+      !publicCheckout.publicComplaintsOffline ||
+      !publicCheckout.publicSkdCount
+    ) {
+      setToast("Lengkapi semua isian presensi pulang terlebih dahulu.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    setAttendanceLoading(true);
+    const response = await fetch("/api/attendance/check-out", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(publicCheckout),
+    });
+    setAttendanceLoading(false);
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setAttendance(data.attendance ?? null);
+    setToast("Presensi pulang tersimpan.");
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
@@ -219,18 +396,40 @@ export default function LoketPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe,transparent_60%),linear-gradient(120deg,#f8fafc,#eff6ff)] px-6 py-12">
-      <div className="mx-auto flex max-w-3xl flex-col gap-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
             Dashboard Loket
           </p>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
-          >
-            Keluar
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {profile ? (
+              <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 py-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
+                  {profile.nama
+                    .split(" ")
+                    .map((part) => part[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-zinc-900">
+                    {profile.nama}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                    {profile.role.replace("_", " ")}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+            >
+              Keluar
+            </button>
+          </div>
         </header>
         <div>
           <h1 className="text-4xl font-semibold text-zinc-900">
@@ -241,7 +440,28 @@ export default function LoketPage() {
           </p>
         </div>
 
-        <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
+        <div className="flex flex-wrap gap-3">
+          {[
+            { id: "queue", label: "Antrian" },
+            { id: "attendance", label: "Presensi" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as "queue" | "attendance")}
+              className={`inline-flex h-10 items-center justify-center rounded-full px-5 text-xs font-semibold transition ${
+                activeTab === tab.id
+                  ? "bg-zinc-900 text-white"
+                  : "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "queue" ? (
+          <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
             Antrian Saat Ini
           </p>
@@ -253,6 +473,48 @@ export default function LoketPage() {
               <p className="mt-2 text-sm text-zinc-600">
                 {currentQueue.serviceName}
               </p>
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Detail Petugas
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowOfficerDetail((prev) => !prev)}
+                    className="text-xs font-semibold text-zinc-600 hover:text-zinc-900"
+                  >
+                    {showOfficerDetail ? "Sembunyikan" : "Tampilkan"}
+                  </button>
+                </div>
+                {showOfficerDetail ? (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                        Petugas Layanan Publik
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-zinc-900">
+                        {currentQueue.publicOfficerName}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                        Petugas Permintaan Data
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-zinc-900">
+                        {currentQueue.dataOfficerName}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                        Satpam
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-zinc-900">
+                        {currentQueue.securityOfficerName}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -330,7 +592,74 @@ export default function LoketPage() {
             </button>
           </div>
         </section>
-        <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
+        ) : null}
+
+        {activeTab === "queue" ? (
+          <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Default Petugas
+                </p>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Pilih petugas permintaan data dan satpam default.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDefaults((prev) => !prev)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+              >
+                {showDefaults ? "Sembunyikan" : "Tampilkan"}
+              </button>
+            </div>
+            {showDefaults ? (
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Petugas Permintaan Data (Default)
+                  </p>
+                  <select
+                    value={defaultDataOfficerId}
+                    onChange={(event) =>
+                      setDefaultDataOfficerId(event.target.value)
+                    }
+                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                  >
+                    <option value="">Pilih Petugas</option>
+                    {dataOfficers.map((officer) => (
+                      <option key={officer.id} value={officer.id}>
+                        {officer.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Satpam (Default)
+                  </p>
+                  <select
+                    value={defaultSecurityOfficerId}
+                    onChange={(event) =>
+                      setDefaultSecurityOfficerId(event.target.value)
+                    }
+                    className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                  >
+                    <option value="">Pilih Satpam</option>
+                    {securityOfficers.map((officer) => (
+                      <option key={officer.id} value={officer.id}>
+                        {officer.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {activeTab === "queue" ? (
+          <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-zinc-900">
               Daftar Antrian Baru
@@ -386,6 +715,53 @@ export default function LoketPage() {
                               </option>
                             ))}
                           </select>
+                          <select
+                            value={
+                              selectedDataOfficer[queue.queueId] ??
+                              defaultDataOfficerId
+                            }
+                            onChange={(event) =>
+                              setSelectedDataOfficer((prev) => ({
+                                ...prev,
+                                [queue.queueId]: event.target.value,
+                              }))
+                            }
+                            className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-700"
+                            disabled={!isDataService(queue.serviceName)}
+                          >
+                            {isDataService(queue.serviceName) ? (
+                              <>
+                                <option value="">Petugas Data</option>
+                                {dataOfficers.map((officer) => (
+                                  <option key={officer.id} value={officer.id}>
+                                    {officer.nama}
+                                  </option>
+                                ))}
+                              </>
+                            ) : (
+                              <option value="">Tidak diperlukan</option>
+                            )}
+                          </select>
+                          <select
+                            value={
+                              selectedSecurityOfficer[queue.queueId] ??
+                              defaultSecurityOfficerId
+                            }
+                            onChange={(event) =>
+                              setSelectedSecurityOfficer((prev) => ({
+                                ...prev,
+                                [queue.queueId]: event.target.value,
+                              }))
+                            }
+                            className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-700"
+                          >
+                            <option value="">Satpam</option>
+                            {securityOfficers.map((officer) => (
+                              <option key={officer.id} value={officer.id}>
+                                {officer.name}
+                              </option>
+                            ))}
+                          </select>
                           <button
                             type="button"
                             onClick={() => handleTakeQueue(queue.queueId)}
@@ -408,12 +784,172 @@ export default function LoketPage() {
             </table>
           </div>
         </section>
+        ) : null}
+
+        {activeTab === "attendance" ? (
+          <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Presensi Petugas Layanan Publik
+                </p>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Datang: {attendance?.checkInAt ? "Sudah" : "Belum"} | Pulang:{" "}
+                  {attendance?.checkOutAt ? "Sudah" : "Belum"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleCheckIn}
+                  disabled={attendanceLoading || Boolean(attendance?.checkInAt)}
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+                >
+                  Presensi Datang
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttendanceOpen(true)}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+                >
+                  Presensi Pulang
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
         {toast ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
             {toast}
           </div>
         ) : null}
       </div>
+      {toast ? (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 shadow-lg">
+          {toast}
+        </div>
+      ) : null}
+      {attendanceOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
+          <div className="w-full max-w-4xl rounded-3xl border border-white/70 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 px-8 py-5">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Presensi Pulang - Layanan Publik
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(false)}
+                className="text-sm font-semibold text-zinc-500 hover:text-zinc-800"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="px-8 py-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Permintaan informasi publik (nondata) kunjungan langsung
+                  </label>
+                  <input
+                    type="number"
+                    value={publicCheckout.publicNondataOffline}
+                    onChange={(event) =>
+                      setPublicCheckout((prev) => ({
+                        ...prev,
+                        publicNondataOffline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Permintaan informasi publik (nondata) online
+                  </label>
+                  <input
+                    type="number"
+                    value={publicCheckout.publicNondataOnline}
+                    onChange={(event) =>
+                      setPublicCheckout((prev) => ({
+                        ...prev,
+                        publicNondataOnline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Jumlah pengaduan masuk (kunjungan langsung)
+                  </label>
+                  <input
+                    type="number"
+                    value={publicCheckout.publicComplaintsOffline}
+                    onChange={(event) =>
+                      setPublicCheckout((prev) => ({
+                        ...prev,
+                        publicComplaintsOffline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Jumlah pengunjung isi/dikirim link SKD
+                  </label>
+                  <input
+                    type="number"
+                    value={publicCheckout.publicSkdCount}
+                    onChange={(event) =>
+                      setPublicCheckout((prev) => ({
+                        ...prev,
+                        publicSkdCount: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Komentar/Saran (opsional)
+                </label>
+                <textarea
+                  value={publicCheckout.publicNotes}
+                  onChange={(event) =>
+                    setPublicCheckout((prev) => ({
+                      ...prev,
+                      publicNotes: event.target.value,
+                    }))
+                  }
+                  className="mt-2 min-h-[90px] w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 border-t border-zinc-100 bg-zinc-50 px-8 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-6 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleCheckOut();
+                  setAttendanceOpen(false);
+                }}
+                disabled={attendanceLoading || Boolean(attendance?.checkOutAt)}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-emerald-600 px-6 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-400"
+              >
+                Simpan Presensi Pulang
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <audio ref={audioRef} src="/audio/notify.wav" preload="auto" />
     </div>
   );

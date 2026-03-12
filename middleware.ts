@@ -51,6 +51,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/attendance")) {
+    const session = await getSession(request);
+    if (!session || session.role !== "PERMINTAAN_DATA") {
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const session = await getSession(request);
     if (!session || !session.isAdmin) {
@@ -70,6 +78,7 @@ export const config = {
     "/loket/:path*",
     "/api/queue/call",
     "/api/queue/complete",
+    "/attendance",
     "/admin/:path*",
     "/api/admin/:path*",
   ],

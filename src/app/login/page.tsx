@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"admin" | "staff">("staff");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -43,6 +44,52 @@ export default function LoginPage() {
     }
     if (data.role === "ADMIN" && data.mode === "admin") {
       router.replace("/admin/assignments");
+      return;
+    }
+    if (data.role === "PERMINTAAN_DATA") {
+      router.replace("/attendance");
+      return;
+    }
+    if (data.counterId) {
+      router.replace(`/loket/${data.counterId}`);
+      return;
+    }
+    router.replace("/");
+  };
+
+  const handleSsoLogin = async () => {
+    setError(null);
+    setSsoLoading(true);
+    const response = await fetch("/api/auth/sso-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, mode }),
+    });
+    setSsoLoading(false);
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setError(data.error ?? "Login SSO gagal");
+      return;
+    }
+
+    const data = (await response.json()) as {
+      counterId: number | null;
+      role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+      mode: "admin" | "staff";
+    };
+
+    const redirect = searchParams.get("redirect");
+    if (redirect) {
+      router.replace(redirect);
+      return;
+    }
+    if (data.role === "ADMIN" && data.mode === "admin") {
+      router.replace("/admin/assignments");
+      return;
+    }
+    if (data.role === "PERMINTAAN_DATA") {
+      router.replace("/attendance");
       return;
     }
     if (data.counterId) {
@@ -129,6 +176,15 @@ export default function LoginPage() {
             className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-zinc-900 px-8 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
           >
             {loading ? "Memproses..." : "Masuk"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSsoLogin}
+            disabled={ssoLoading}
+            className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full border border-zinc-300 bg-white px-8 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 disabled:cursor-not-allowed disabled:text-zinc-400"
+          >
+            {ssoLoading ? "Menghubungkan SSO..." : "Login SSO SICAKEP"}
           </button>
         </form>
       </div>

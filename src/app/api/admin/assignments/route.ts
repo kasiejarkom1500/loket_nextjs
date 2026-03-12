@@ -15,6 +15,13 @@ const parseDateRange = (dateString: string | null) => {
   return { start, end };
 };
 
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const dateParam = url.searchParams.get("date");
@@ -26,7 +33,12 @@ export async function GET(request: Request) {
     orderBy: [{ shift: "asc" }, { role: "asc" }],
   });
 
-  return NextResponse.json({ assignments });
+  const items = assignments.map((assignment) => ({
+    ...assignment,
+    date: formatLocalDate(assignment.date),
+  }));
+
+  return NextResponse.json({ assignments: items });
 }
 
 export async function POST(request: Request) {

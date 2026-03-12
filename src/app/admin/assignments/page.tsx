@@ -35,15 +35,22 @@ const shifts = [
   { value: "SIANG", label: "Siang" },
 ];
 
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function AssignmentPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [counters, setCounters] = useState<Counter[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [formDate, setFormDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    formatDateInput(new Date()),
   );
   const [filterDate, setFilterDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    formatDateInput(new Date()),
   );
   const [form, setForm] = useState({
     userId: "",
@@ -136,7 +143,7 @@ export default function AssignmentPage() {
 
   const handleEdit = (assignment: Assignment) => {
     setEditingId(assignment.id);
-    setFormDate(assignment.date.slice(0, 10));
+    setFormDate(assignment.date);
     setForm({
       userId: String(assignment.user.id),
       role: assignment.role,
@@ -230,7 +237,7 @@ export default function AssignmentPage() {
               type="button"
               onClick={() => {
                 setEditingId(null);
-                setFormDate(new Date().toISOString().slice(0, 10));
+                setFormDate(formatDateInput(new Date()));
                 setForm({
                   userId: "",
                   role: "LAYANAN_PUBLIK",

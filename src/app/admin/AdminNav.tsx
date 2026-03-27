@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/security-officers", label: "Satpam" },
   { href: "/admin/visitors", label: "Pengunjung" },
   { href: "/admin/rating-recap", label: "Rekap Rating" },
+  { href: "/admin/attendance-recap", label: "Rekap Presensi" },
 ];
 
 export default function AdminNav() {

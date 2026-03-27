@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onValue, ref } from "firebase/database";
 import { firebaseClientDb, firebaseClientReady } from "@/lib/firebase-client";
 
@@ -27,6 +27,15 @@ type RealtimeState = {
   counters: Record<string, CounterState | null>;
 };
 
+type SoundEvent = {
+  id: number;
+  queueId: number;
+  number: string;
+  serviceName: string;
+  counterId: number;
+  createdAt: string;
+};
+
 /* ── small reusable SVG icon ── */
 function Icon({ d, size = 20, stroke = false, color }: { d: string; size?: number; stroke?: boolean; color?: string }) {
   return (
@@ -50,6 +59,51 @@ export default function DisplayPage() {
   const [lastAnnounced, setLastAnnounced] = useState<string | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastSoundId = useRef<number | null>(null);
+
+  const buildAnnouncementFiles = useCallback(
+    (queueNumber: string, _counterId: number, serviceName: string) => {
+      const [prefix, rawDigits] = queueNumber.split("-");
+      const letter = prefix?.trim().toLowerCase();
+      const digits = rawDigits?.trim() || queueNumber.replace(/\D/g, "");
+      const isDataService = serviceName
+        .toLowerCase()
+        .includes("permintaan data");
+      const files = ["/audio/intro.wav"];
+
+      if (letter) {
+        files.push(`/audio/letter-${letter}.wav`);
+      }
+
+      digits.split("").forEach((digit) => {
+        files.push(`/audio/angka-${digit}.wav`);
+      });
+
+      files.push("/audio/loket.wav");
+      files.push(
+        isDataService
+          ? "/audio/permintaan-data.wav"
+          : "/audio/pelayanan-publik.wav",
+      );
+
+      return files;
+    },
+    [],
+  );
+
+  const playAudioSequence = useCallback(async (files: string[]) => {
+    for (const file of files) {
+      await new Promise<void>((resolve) => {
+        const audio = new Audio(file);
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        audio
+          .play()
+          .then(() => {})
+          .catch(() => resolve());
+      });
+    }
+  }, []);
 
   useEffect(() => {
     setNow(new Date());
@@ -60,12 +114,32 @@ export default function DisplayPage() {
   useEffect(() => {
     if (firebaseClientReady && firebaseClientDb) {
       const stateRef = ref(firebaseClientDb, "state");
-      const unsubscribe = onValue(stateRef, (snapshot) => {
+      const soundRef = ref(firebaseClientDb, "sound");
+      const unsubscribeState = onValue(stateRef, (snapshot) => {
         if (snapshot.exists()) {
           setState(snapshot.val());
         }
       });
-      return () => unsubscribe();
+      const unsubscribeSound = onValue(soundRef, (snapshot) => {
+        const value = snapshot.val() as SoundEvent | null;
+        if (!value || !audioEnabled) {
+          return;
+        }
+        if (lastSoundId.current === value.id) {
+          return;
+        }
+        lastSoundId.current = value.id;
+        const files = buildAnnouncementFiles(
+          value.number,
+          value.counterId,
+          value.serviceName,
+        );
+        playAudioSequence(files).catch(() => {});
+      });
+      return () => {
+        unsubscribeState();
+        unsubscribeSound();
+      };
     }
 
     const fetchOnce = async () => {
@@ -75,7 +149,7 @@ export default function DisplayPage() {
       setState(data);
     };
     fetchOnce();
-  }, []);
+  }, [audioEnabled, buildAnnouncementFiles, playAudioSequence]);
 
   const calledList = useMemo(() => state?.called ?? [], [state]);
   const calledActive = useMemo(() => calledList.filter((i) => i.status === "CALLED"), [calledList]);
@@ -96,12 +170,14 @@ export default function DisplayPage() {
     if (!audioEnabled || !latestCall) return;
     const key = `${latestCall.queueId}-${latestCall.counterId}`;
     if (lastAnnounced === key) return;
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
+    const files = buildAnnouncementFiles(
+      latestCall.number,
+      latestCall.counterId,
+      latestCall.serviceName,
+    );
+    playAudioSequence(files).catch(() => {});
     setLastAnnounced(key);
-  }, [audioEnabled, latestCall, lastAnnounced]);
+  }, [audioEnabled, latestCall, lastAnnounced, buildAnnouncementFiles, playAudioSequence]);
 
   const counterEntries = state?.counters ? Object.entries(state.counters) : [];
 

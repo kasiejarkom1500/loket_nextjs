@@ -347,6 +347,25 @@ export default function LoketPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleReplaySound = async () => {
+    if (!currentQueue) {
+      return;
+    }
+    const response = await fetch("/api/queue/announce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ counterId }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setToast(data.error ?? "Gagal memutar ulang panggilan.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    setToast("Panggilan diulang.");
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleCheckIn = async () => {
     setAttendanceLoading(true);
     const response = await fetch("/api/attendance/check-in", {
@@ -581,6 +600,14 @@ export default function LoketPage() {
               className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-900 px-8 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
             >
               Panggil Selanjutnya
+            </button>
+            <button
+              type="button"
+              onClick={handleReplaySound}
+              disabled={!currentQueue || loading}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-8 text-sm font-semibold text-amber-700 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:text-amber-300"
+            >
+              Ulangi Panggilan
             </button>
             <button
               type="button"

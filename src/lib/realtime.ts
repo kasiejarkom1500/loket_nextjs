@@ -137,7 +137,7 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
       counterName: queue.counter?.name ?? `Loket ${queue.counterId}`,
       serviceName: queue.service.name,
       calledAt: queue.calledAt ? queue.calledAt.toISOString() : null,
-      status: queue.status,
+      status: queue.status === "CALLED" ? "CALLED" : "COMPLETED",
     });
   }
 

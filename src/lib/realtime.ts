@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { firebaseDb } from "./firebase-admin";
+import { DateTime } from "luxon";
 
 type CalledQueue = {
   queueId: number;
@@ -45,10 +46,17 @@ export type RealtimeState = {
 };
 
 export async function buildRealtimeState(): Promise<RealtimeState> {
+  const now = DateTime.now().setZone("Asia/Jakarta");
+  const startOfDay = now.startOf("day").toJSDate();
+  const endOfToday = now.endOf("day").toJSDate();
+
   const [activeCalledQueues, recentQueues, pendingQueues, counters] =
     await Promise.all([
       prisma.queue.findMany({
-        where: { status: "CALLED" },
+        where: {
+          status: "CALLED",
+          createdAt: { gte: startOfDay, lte: endOfToday },
+        },
         include: {
           counter: true,
           service: true,
@@ -60,7 +68,10 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
         orderBy: { calledAt: "desc" },
       }),
       prisma.queue.findMany({
-        where: { calledAt: { not: null } },
+        where: {
+          calledAt: { not: null },
+          createdAt: { gte: startOfDay, lte: endOfToday },
+        },
         include: {
           counter: true,
           service: true,
@@ -73,7 +84,10 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
         take: 10,
       }),
       prisma.queue.findMany({
-        where: { status: "PENDING" },
+        where: {
+          status: "PENDING",
+          createdAt: { gte: startOfDay, lte: endOfToday },
+        },
         include: { service: true, visitor: true },
         orderBy: { createdAt: "asc" },
         take: 15,

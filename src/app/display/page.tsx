@@ -36,23 +36,6 @@ type SoundEvent = {
   createdAt: string;
 };
 
-/* ── small reusable SVG icon ── */
-function Icon({ d, size = 20, stroke = false, color }: { d: string; size?: number; stroke?: boolean; color?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      style={{ width: size, height: size, flexShrink: 0 }}
-      fill={stroke ? "none" : "currentColor"}
-      stroke={stroke ? "currentColor" : "none"}
-      strokeWidth={stroke ? 1.5 : 0}
-      color={color}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
-    </svg>
-  );
-}
-
 export default function DisplayPage() {
   const [state, setState] = useState<RealtimeState | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -152,18 +135,33 @@ export default function DisplayPage() {
   }, [audioEnabled, buildAnnouncementFiles, playAudioSequence]);
 
   const calledList = useMemo(() => state?.called ?? [], [state]);
-  const calledActive = useMemo(() => calledList.filter((i) => i.status === "CALLED"), [calledList]);
-  const calledCompleted = useMemo(() => calledList.filter((i) => i.status === "COMPLETED"), [calledList]);
+  const calledActive = useMemo(
+    () => calledList.filter((i) => i.status === "CALLED"),
+    [calledList],
+  );
+  const calledCompleted = useMemo(
+    () => calledList.filter((i) => i.status === "COMPLETED"),
+    [calledList],
+  );
   const latestCall = useMemo(() => calledActive[0] ?? null, [calledActive]);
 
   const formattedTime = useMemo(() => {
     if (!now) return "";
-    return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(now);
+    return new Intl.DateTimeFormat("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(now);
   }, [now]);
 
   const formattedDate = useMemo(() => {
     if (!now) return "";
-    return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }).format(now);
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(now);
   }, [now]);
 
   useEffect(() => {
@@ -177,54 +175,71 @@ export default function DisplayPage() {
     );
     playAudioSequence(files).catch(() => {});
     setLastAnnounced(key);
-  }, [audioEnabled, latestCall, lastAnnounced, buildAnnouncementFiles, playAudioSequence]);
+  }, [
+    audioEnabled,
+    latestCall,
+    lastAnnounced,
+    buildAnnouncementFiles,
+    playAudioSequence,
+  ]);
 
-  const counterEntries = state?.counters ? Object.entries(state.counters) : [];
+  const counterEntries = state?.counters
+    ? Object.entries(state.counters)
+    : [];
 
   return (
     <>
       <style>{`
-        .display-page { color-scheme: light; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); color: #f8fafc; }
-        @keyframes dfadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes dpulse    { 0%,100% { opacity:1 } 50% { opacity:.6 } }
-        @keyframes dslideIn  { from { opacity:0; transform:translateX(-12px) } to { opacity:1; transform:translateX(0) } }
-        @keyframes dglow     { 0%,100% { box-shadow: 0 0 20px rgba(251,191,36,.15) } 50% { box-shadow: 0 0 40px rgba(251,191,36,.3) } }
+        @keyframes dfadeUp   { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes dpulse    { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+        @keyframes dslideIn  { from { opacity:0; transform:translateX(-10px) } to { opacity:1; transform:translateX(0) } }
+        @keyframes dglow     { 0%,100% { box-shadow: 0 0 24px rgba(251,191,36,.08) } 50% { box-shadow: 0 0 48px rgba(251,191,36,.18) } }
         .d-card    { animation: dfadeUp .5s cubic-bezier(.16,1,.3,1) both; }
-        .d-active  { animation: dglow 2s ease-in-out infinite; }
+        .d-active  { animation: dglow 2.5s ease-in-out infinite; }
         .d-pulse   { animation: dpulse 1.5s ease-in-out infinite; }
         .d-slide   { animation: dslideIn .4s cubic-bezier(.16,1,.3,1) both; }
       `}</style>
 
-      <div className="display-page" style={{ minHeight: "100vh", padding: "2rem 1.5rem", fontFamily: "var(--font-geist-sans), 'Segoe UI', system-ui, sans-serif" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10)_0%,transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.06)_0%,transparent_50%),linear-gradient(160deg,#f8fafc_0%,#eef2f7_100%)]"
+        style={{ padding: "2rem 1.5rem", fontFamily: "var(--font-geist-sans), 'Segoe UI', system-ui, sans-serif" }}
+      >
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-7">
 
           {/* ═══════════ HEADER ═══════════ */}
-          <header style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 9999, background: "rgba(251,191,36,.12)", padding: "6px 16px", marginBottom: 12 }}>
-                <span className="d-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.25em", color: "#fbbf24" }}>Display Dinding — Live</span>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5">
+                <span className="d-pulse h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-700">
+                  Display Antrian — Live
+                </span>
               </div>
-              <h1 style={{ fontSize: "clamp(1.75rem, 4vw, 3rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "#f8fafc", lineHeight: 1.1 }}>
+              <h1 className="text-[clamp(1.75rem,4vw,3rem)] font-extrabold leading-tight tracking-tight text-zinc-900">
                 Panggilan Antrian
               </h1>
-              <p style={{ marginTop: 6, fontSize: 14, color: "#94a3b8" }}>
+              <p className="mt-1.5 text-sm text-zinc-500">
                 Realtime via Firebase — BPS Provinsi Jambi
               </p>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              {/* clock */}
-              <div style={{ borderRadius: 16, border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.05)", backdropFilter: "blur(12px)", padding: "12px 20px", textAlign: "center" }}>
-                <p style={{ fontSize: 28, fontWeight: 800, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", color: "#f8fafc" }} suppressHydrationWarning>
+            <div className="flex items-center gap-4">
+              {/* Clock */}
+              <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-center shadow-sm">
+                <p
+                  className="text-[28px] font-extrabold tabular-nums tracking-tight text-zinc-900"
+                  suppressHydrationWarning
+                >
                   {formattedTime || "—"}
                 </p>
-                <p style={{ fontSize: 11, color: "#64748b", marginTop: 2 }} suppressHydrationWarning>
+                <p
+                  className="mt-0.5 text-[11px] text-zinc-400"
+                  suppressHydrationWarning
+                >
                   {formattedDate || ""}
                 </p>
               </div>
 
-              {/* audio toggle */}
+              {/* Audio toggle */}
               <button
                 type="button"
                 onClick={() => {
@@ -235,19 +250,20 @@ export default function DisplayPage() {
                     audioRef.current.play().catch(() => {});
                   }
                 }}
-                style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  height: 44, borderRadius: 12, border: "none",
-                  padding: "0 20px", fontSize: 13, fontWeight: 700,
-                  cursor: "pointer", transition: "all .2s",
-                  background: audioEnabled ? "linear-gradient(135deg, #22c55e, #16a34a)" : "rgba(255,255,255,.08)",
-                  color: audioEnabled ? "#fff" : "#94a3b8",
-                }}
+                className={`flex h-11 items-center gap-2 rounded-xl px-5 text-[13px] font-bold transition-all ${
+                  audioEnabled
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "border border-zinc-200 bg-white text-zinc-500 shadow-sm hover:border-zinc-300 hover:text-zinc-700"
+                }`}
               >
                 {audioEnabled ? (
-                  <Icon d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" size={16} stroke color="#fff" />
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
                 ) : (
-                  <Icon d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" size={16} stroke color="#94a3b8" />
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.531V19.94a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                  </svg>
                 )}
                 {audioEnabled ? "Suara Aktif" : "Aktifkan Suara"}
               </button>
@@ -255,63 +271,75 @@ export default function DisplayPage() {
           </header>
 
           {/* ═══════════ MAIN GRID ═══════════ */}
-          <div style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr", ...(counterEntries.length > 0 ? { gridTemplateColumns: "2fr 1fr" } : {}) }}>
-
+          <div
+            className="grid gap-6"
+            style={{
+              gridTemplateColumns:
+                counterEntries.length > 0 ? "2fr 1fr" : "1fr",
+            }}
+          >
             {/* ── LEFT: Called Queues ── */}
-            <div className="d-card" style={{ borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.04)", backdropFilter: "blur(12px)", padding: 32, display: "flex", flexDirection: "column", gap: 24 }}>
+            <div className="d-card flex flex-col gap-6 rounded-3xl border border-zinc-200/80 bg-white/90 p-8 shadow-sm backdrop-blur-sm">
 
               {/* Section: Sedang Dipanggil */}
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(251,191,36,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" size={18} stroke color="#fbbf24" />
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                    <svg className="h-[18px] w-[18px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                    </svg>
                   </div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc" }}>Sedang Dipanggil</h2>
+                  <h2 className="text-lg font-extrabold text-zinc-900">
+                    Sedang Dipanggil
+                  </h2>
                 </div>
 
                 {calledActive.length ? (
-                  <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
                     {calledActive.map((item, i) => (
                       <div
                         key={`${item.queueId}-${item.counterId}`}
-                        className={i === 0 ? "d-active d-slide" : "d-slide"}
-                        style={{
-                          animationDelay: `${i * 80}ms`,
-                          borderRadius: 20,
-                          border: i === 0 ? "2px solid rgba(251,191,36,.4)" : "1px solid rgba(255,255,255,.08)",
-                          background: i === 0
-                            ? "linear-gradient(135deg, rgba(251,191,36,.1), rgba(245,158,11,.06))"
-                            : "rgba(255,255,255,.03)",
-                          padding: "20px 24px",
-                        }}
+                        className={`d-slide ${i === 0 ? "d-active" : ""}`}
+                        style={{ animationDelay: `${i * 80}ms` }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#94a3b8" }}>
-                            {item.counterName}
-                          </span>
-                          <span style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            borderRadius: 9999, padding: "3px 10px",
-                            fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em",
-                            background: "rgba(251,191,36,.15)", color: "#fbbf24",
-                          }}>
-                            <span className="d-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#fbbf24" }} />
-                            Dipanggil
-                          </span>
+                        <div
+                          className={`rounded-2xl p-5 ${
+                            i === 0
+                              ? "border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50"
+                              : "border border-zinc-200 bg-zinc-50/80"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                              {item.counterName}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                              <span className="d-pulse h-1.5 w-1.5 rounded-full bg-amber-500" />
+                              Dipanggil
+                            </span>
+                          </div>
+                          <p
+                            className={`mt-3 font-black leading-none tracking-tight text-zinc-900 ${
+                              i === 0 ? "text-5xl" : "text-4xl"
+                            }`}
+                          >
+                            {item.number}
+                          </p>
+                          <p className="mt-2 text-[13px] text-zinc-500">
+                            {item.serviceName}
+                          </p>
                         </div>
-                        <p style={{ marginTop: 12, fontSize: i === 0 ? 48 : 36, fontWeight: 900, letterSpacing: "-0.03em", color: "#f8fafc", lineHeight: 1 }}>
-                          {item.number}
-                        </p>
-                        <p style={{ marginTop: 8, fontSize: 13, color: "#64748b" }}>
-                          {item.serviceName}
-                        </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "40px 0", borderRadius: 16, border: "1px dashed rgba(255,255,255,.08)", color: "#475569" }}>
-                    <Icon d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" size={20} stroke color="#475569" />
-                    <span style={{ fontSize: 14 }}>Belum ada antrian yang dipanggil</span>
+                  <div className="flex items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 py-10 text-zinc-400">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span className="text-sm">
+                      Belum ada antrian yang dipanggil
+                    </span>
                   </div>
                 )}
               </div>
@@ -319,38 +347,38 @@ export default function DisplayPage() {
               {/* Section: Terakhir Selesai */}
               {calledCompleted.length ? (
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(34,197,94,.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" size={16} stroke color="#22c55e" />
+                  <div className="mb-4 flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+                      <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
                     </div>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: "#64748b" }}>Terakhir Selesai</h3>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-400">
+                      Terakhir Selesai
+                    </h3>
                   </div>
-                  <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+                  <div
+                    className="grid gap-3"
+                    style={{
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(220px, 1fr))",
+                    }}
+                  >
                     {calledCompleted.map((item, i) => (
                       <div
                         key={`${item.queueId}-${item.counterId}-done`}
-                        className="d-slide"
-                        style={{
-                          animationDelay: `${i * 60}ms`,
-                          borderRadius: 14,
-                          border: "1px solid rgba(255,255,255,.05)",
-                          background: "rgba(255,255,255,.02)",
-                          padding: "14px 18px",
-                        }}
+                        className="d-slide rounded-xl border border-zinc-100 bg-zinc-50/60 px-4 py-3.5"
+                        style={{ animationDelay: `${i * 60}ms` }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#64748b" }}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
                             {item.counterName}
                           </span>
-                          <span style={{
-                            borderRadius: 9999, padding: "2px 8px",
-                            fontSize: 10, fontWeight: 700,
-                            background: "rgba(34,197,94,.1)", color: "#22c55e",
-                          }}>
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                             Selesai
                           </span>
                         </div>
-                        <p style={{ marginTop: 8, fontSize: 22, fontWeight: 800, color: "#94a3b8", letterSpacing: "-0.02em" }}>
+                        <p className="mt-2 text-[22px] font-extrabold tracking-tight text-zinc-500">
                           {item.number}
                         </p>
                       </div>
@@ -362,60 +390,70 @@ export default function DisplayPage() {
 
             {/* ── RIGHT: Counter Status ── */}
             {counterEntries.length > 0 ? (
-              <div className="d-card" style={{ animationDelay: "100ms", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.04)", backdropFilter: "blur(12px)", padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(99,102,241,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" size={18} stroke color="#818cf8" />
+              <div
+                className="d-card flex flex-col gap-4 rounded-3xl border border-zinc-200/80 bg-white/90 p-7 shadow-sm backdrop-blur-sm"
+                style={{ animationDelay: "100ms" }}
+              >
+                <div className="mb-1 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 shadow-sm">
+                    <svg className="h-[18px] w-[18px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+                    </svg>
                   </div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc" }}>Status Loket</h2>
+                  <h2 className="text-lg font-extrabold text-zinc-900">
+                    Status Loket
+                  </h2>
                 </div>
 
                 {counterEntries.map(([id, counter], i) => (
                   <div
                     key={id}
                     className="d-slide"
-                    style={{
-                      animationDelay: `${i * 80}ms`,
-                      borderRadius: 16,
-                      border: counter
-                        ? "1px solid rgba(99,102,241,.15)"
-                        : "1px solid rgba(255,255,255,.05)",
-                      background: counter
-                        ? "linear-gradient(135deg, rgba(99,102,241,.06), rgba(139,92,246,.04))"
-                        : "rgba(255,255,255,.02)",
-                      padding: "16px 20px",
-                    }}
+                    style={{ animationDelay: `${i * 80}ms` }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#64748b" }}>
-                        Loket {id}
-                      </span>
+                    <div
+                      className={`rounded-2xl px-5 py-4 ${
+                        counter
+                          ? "border border-indigo-200 bg-gradient-to-br from-indigo-50/80 to-violet-50/50"
+                          : "border border-zinc-100 bg-zinc-50/60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                          Loket {id}
+                        </span>
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            counter ? "bg-emerald-500" : "bg-zinc-300"
+                          }`}
+                        />
+                      </div>
                       {counter ? (
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
+                        <>
+                          <p className="mt-2.5 text-[28px] font-black leading-none tracking-tight text-zinc-900">
+                            {counter.number}
+                          </p>
+                          <p className="mt-1.5 text-xs text-zinc-500">
+                            {counter.serviceName}
+                          </p>
+                        </>
                       ) : (
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#475569" }} />
+                        <p className="mt-2.5 text-[13px] text-zinc-400">
+                          Menunggu panggilan…
+                        </p>
                       )}
                     </div>
-                    {counter ? (
-                      <>
-                        <p style={{ marginTop: 10, fontSize: 28, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                          {counter.number}
-                        </p>
-                        <p style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>
-                          {counter.serviceName}
-                        </p>
-                      </>
-                    ) : (
-                      <p style={{ marginTop: 10, fontSize: 13, color: "#475569" }}>
-                        Menunggu panggilan…
-                      </p>
-                    )}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="d-card" style={{ animationDelay: "100ms", borderRadius: 28, border: "1px dashed rgba(255,255,255,.08)", background: "rgba(255,255,255,.02)", padding: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <p style={{ fontSize: 14, color: "#475569" }}>Menunggu data realtime…</p>
+              <div
+                className="d-card flex items-center justify-center rounded-3xl border border-dashed border-zinc-200 bg-white/60 p-8"
+                style={{ animationDelay: "100ms" }}
+              >
+                <p className="text-sm text-zinc-400">
+                  Menunggu data realtime…
+                </p>
               </div>
             )}
           </div>

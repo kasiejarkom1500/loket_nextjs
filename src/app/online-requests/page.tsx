@@ -19,7 +19,8 @@ type OnlineRequest = {
   keterangan: string;
 };
 
-const yesNoOptions = ["", "Ya", "Tidak"] as const;
+const skdOptions = ["", "Telah dikirim", "Belum dikirim", "Tidak dikirim"] as const;
+const responseOptions = ["", "Ya", "Tidak"] as const;
 
 export default function OnlineRequestsPage() {
   const [items, setItems] = useState<OnlineRequest[]>([]);
@@ -341,7 +342,7 @@ export default function OnlineRequestsPage() {
                       }
                       className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
                     >
-                      {yesNoOptions.map((opt) => (
+                      {skdOptions.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt || "-"}
                         </option>
@@ -363,7 +364,7 @@ export default function OnlineRequestsPage() {
                       }
                       className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
                     >
-                      {yesNoOptions.map((opt) => (
+                      {responseOptions.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt || "-"}
                         </option>

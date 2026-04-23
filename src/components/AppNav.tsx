@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 type Profile = {
@@ -53,7 +53,7 @@ const ROLE_LABEL: Record<string, string> = {
   PERMINTAAN_DATA: "Permintaan Data",
 };
 
-export default function AppNav() {
+function AppNavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -204,5 +204,13 @@ export default function AppNav() {
         })}
       </div>
     </nav>
+  );
+}
+
+export default function AppNav() {
+  return (
+    <Suspense fallback={null}>
+      <AppNavInner />
+    </Suspense>
   );
 }

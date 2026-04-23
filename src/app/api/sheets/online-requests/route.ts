@@ -5,6 +5,9 @@ import { getSheetValues } from "@/lib/google-sheets";
 
 const SESSION_COOKIE = "loket_session";
 
+const normalizeHeader = (value: string) =>
+  value.replace(/\s+/g, " ").trim().toLowerCase();
+
 const getSession = async () => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) {
@@ -35,7 +38,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const values = await getSheetValues(`${sheetName}!A:Q`);
+  const values = await getSheetValues(`'${sheetName.replace(/'/g, "''")}'!A:Q`);
   if (values.length === 0) {
     return NextResponse.json({ items: [] });
   }
@@ -45,11 +48,11 @@ export async function GET(request: Request) {
 
   const headerIndex = new Map<string, number>();
   headers.forEach((header, index) => {
-    headerIndex.set(String(header).trim(), index);
+    headerIndex.set(normalizeHeader(String(header)), index);
   });
 
   const getCell = (row: string[], header: string) => {
-    const index = headerIndex.get(header);
+    const index = headerIndex.get(normalizeHeader(header));
     if (index === undefined) {
       return "";
     }
@@ -78,11 +81,17 @@ export async function GET(request: Request) {
     })
     .reverse();
 
+  const isDone = (value: string) => {
+    const normalized = normalizeHeader(value);
+    return (
+      normalized === normalizeHeader("Telah dikirim") ||
+      normalized === normalizeHeader("Tidak dikirim")
+    );
+  };
+
   const filtered = onlyPending
     ? items.filter(
-        (item) =>
-          !String(item.responded ?? "").trim() ||
-          !String(item.petugasKonsultasi ?? "").trim(),
+        (item) => !isDone(String(item.skdLinkSent ?? "")),
       )
     : items;
 
@@ -94,4 +103,3 @@ export async function GET(request: Request) {
     },
   });
 }
-

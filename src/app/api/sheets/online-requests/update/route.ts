@@ -5,6 +5,9 @@ import { getSheetValues, updateSheetValues } from "@/lib/google-sheets";
 
 const SESSION_COOKIE = "loket_session";
 
+const normalizeHeader = (value: string) =>
+  value.replace(/\s+/g, " ").trim().toLowerCase();
+
 const getSession = async () => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) {
@@ -58,57 +61,69 @@ export async function POST(request: Request) {
     );
   }
 
-  const values = await getSheetValues(`${sheetName}!A1:Q1`);
+  const quotedSheetName = `'${sheetName.replace(/'/g, "''")}'`;
+  const values = await getSheetValues(`${quotedSheetName}!A1:Q1`);
   const headers = values[0] ?? [];
   const headerIndex = new Map<string, number>();
   headers.forEach((header, index) => {
-    headerIndex.set(String(header).trim(), index);
+    headerIndex.set(normalizeHeader(String(header)), index);
   });
 
-  const requiredHeaders = [
-    "PUBLIKASI YANG DISARANKAN",
-    "Petugas Konsultasi",
-    "Apakah sudah dikirimkan link SKD ?",
-    "YBS Telah Merespon",
-  ];
-  for (const header of requiredHeaders) {
-    if (!headerIndex.has(header)) {
+  const requiredHeaders: Record<string, string> = {
+    PUBLIKASI: "PUBLIKASI YANG DISARANKAN",
+    KONSULTASI: "Petugas Konsultasi",
+    SKD: "Apakah sudah dikirimkan link SKD ?",
+    RESPON: "YBS Telah Merespon",
+  };
+  for (const label of Object.values(requiredHeaders)) {
+    if (!headerIndex.has(normalizeHeader(label))) {
       return NextResponse.json(
-        { error: `Kolom tidak ditemukan: ${header}` },
+        { error: `Kolom tidak ditemukan: ${label}` },
         { status: 400 },
       );
     }
   }
 
   const updates: Array<{ rangeA1: string; value: string }> = [];
-  const publishCol = toColumnLetter(headerIndex.get("PUBLIKASI YANG DISARANKAN") as number);
-  const consultantCol = toColumnLetter(headerIndex.get("Petugas Konsultasi") as number);
-  const skdCol = toColumnLetter(headerIndex.get("Apakah sudah dikirimkan link SKD ?") as number);
-  const respondedCol = toColumnLetter(headerIndex.get("YBS Telah Merespon") as number);
+  const publishCol = toColumnLetter(
+    headerIndex.get(normalizeHeader(requiredHeaders.PUBLIKASI)) as number,
+  );
+  const consultantCol = toColumnLetter(
+    headerIndex.get(normalizeHeader(requiredHeaders.KONSULTASI)) as number,
+  );
+  const skdCol = toColumnLetter(
+    headerIndex.get(normalizeHeader(requiredHeaders.SKD)) as number,
+  );
+  const respondedCol = toColumnLetter(
+    headerIndex.get(normalizeHeader(requiredHeaders.RESPON)) as number,
+  );
 
   updates.push({
-    rangeA1: `${sheetName}!${publishCol}${rowNumber}`,
+    rangeA1: `${quotedSheetName}!${publishCol}${rowNumber}`,
     value: publikasi,
   });
   updates.push({
-    rangeA1: `${sheetName}!${consultantCol}${rowNumber}`,
+    rangeA1: `${quotedSheetName}!${consultantCol}${rowNumber}`,
     value: session.nama,
   });
-  if (skdLinkSent) {
-    updates.push({
-      rangeA1: `${sheetName}!${skdCol}${rowNumber}`,
-      value: skdLinkSent,
-    });
-  }
-  if (responded) {
-    updates.push({
-      rangeA1: `${sheetName}!${respondedCol}${rowNumber}`,
-      value: responded,
-    });
-  }
+  updates.push({
+    rangeA1: `${quotedSheetName}!${skdCol}${rowNumber}`,
+    value: skdLinkSent,
+  });
+  updates.push({
+    rangeA1: `${quotedSheetName}!${respondedCol}${rowNumber}`,
+    value: responded,
+  });
 
-  await updateSheetValues(updates);
+  try {
+    await updateSheetValues(updates);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: `Gagal update Google Sheet: ${message}` },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
-

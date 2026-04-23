@@ -80,7 +80,7 @@ export const appendRowToSheet = async (row: Array<string | number | null>) => {
   }
 
   const token = await getAccessToken(config);
-  const range = `${config.sheetName}!A:Z`;
+  const range = `'${config.sheetName.replace(/'/g, "''")}'!A:Z`;
   const url =
     `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
       config.spreadsheetId,

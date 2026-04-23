@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { onValue, ref } from "firebase/database";
 import { firebaseClientDb, firebaseClientReady } from "@/lib/firebase-client";
+import AppNav from "@/components/AppNav";
 
 type CounterState = {
   queueId: number;
@@ -80,7 +81,8 @@ export default function LoketPage() {
     publicNotes: "",
   });
   const [staffNote, setStaffNote] = useState("");
-  const [activeTab, setActiveTab] = useState<"queue" | "attendance">("queue");
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get("tab") === "attendance" ? "attendance" : "queue") as "queue" | "attendance";
   const currentQueue = useMemo(
     () => (state?.counters ? state.counters[String(counterId)] : null),
     [state, counterId],
@@ -414,42 +416,10 @@ export default function LoketPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe,transparent_60%),linear-gradient(120deg,#f8fafc,#eff6ff)] px-6 py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe,transparent_60%),linear-gradient(120deg,#f8fafc,#eff6ff)] px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-            Dashboard Loket
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            {profile ? (
-              <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 py-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
-                  {profile.nama
-                    .split(" ")
-                    .map((part) => part[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()}
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-zinc-900">
-                    {profile.nama}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    {profile.role.replace("_", " ")}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
-            >
-              Keluar
-            </button>
-          </div>
-        </header>
+        <AppNav />
+
         <div>
           <h1 className="text-4xl font-semibold text-zinc-900">
             Loket {counterId || "-"}
@@ -457,26 +427,6 @@ export default function LoketPage() {
           <p className="mt-3 text-sm text-zinc-600">
             Panggil antrian berikutnya dan tandai selesai pelayanan.
           </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          {[
-            { id: "queue", label: "Antrian" },
-            { id: "attendance", label: "Presensi" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as "queue" | "attendance")}
-              className={`inline-flex h-10 items-center justify-center rounded-full px-5 text-xs font-semibold transition ${
-                activeTab === tab.id
-                  ? "bg-zinc-900 text-white"
-                  : "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         {activeTab === "queue" ? (

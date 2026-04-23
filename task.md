@@ -28,6 +28,9 @@
   - [x] `POST /api/admin/assignments` - Create assignment
   - [x] `PUT /api/admin/assignments` - Update assignment
   - [x] `DELETE /api/admin/assignments` - Delete assignment
+  - [x] `POST /api/queue/announce` - Replay sound on display
+  - [x] `GET /api/sheets/online-requests` - List Google Sheet responses
+  - [x] `POST /api/sheets/online-requests/update` - Update Google Sheet row
 - [/] Realtime Updates (Firebase Realtime Database)
   - [x] Client subscribe for `/display` and `/loket/[id]`
   - [x] Admin broadcast updates on call/complete
@@ -43,6 +46,7 @@
   - [x] `/admin/services` - Manage services + colors
   - [x] `/admin/visitors` - Visitor list + Excel export
   - [x] `/admin/rating-recap` - Monthly rating recap + Excel export
+  - [x] `/online-requests` - View/update Google Form (Sheets) responses
 - [/] Authentication
   - [x] User model with nip_lama, username, password, nama
   - [x] Login page and session cookie

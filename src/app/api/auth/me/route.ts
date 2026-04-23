@@ -14,7 +14,9 @@ export async function GET() {
         nama: session.nama,
         username: session.username,
         role: session.role,
+        counterId: session.counterId,
       },
+      counterId: session.counterId,
     });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -59,6 +59,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/online-requests") || pathname.startsWith("/api/sheets")) {
+    const session = await getSession(request);
+    if (!session) {
+      if (pathname.startsWith("/api/sheets")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const session = await getSession(request);
     if (!session || !session.isAdmin) {
@@ -79,6 +91,8 @@ export const config = {
     "/api/queue/call",
     "/api/queue/complete",
     "/attendance",
+    "/online-requests/:path*",
+    "/api/sheets/:path*",
     "/admin/:path*",
     "/api/admin/:path*",
   ],

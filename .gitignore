@@ -36,6 +36,9 @@ yarn-error.log*
 # firebase service accounts
 firebase/*.json
 
+# google service accounts
+google/*.json
+
 # vercel
 .vercel
 

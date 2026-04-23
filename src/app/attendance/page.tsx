@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AppNav from "@/components/AppNav";
 
 export default function AttendancePage() {
   const [attendance, setAttendance] = useState<{
@@ -42,6 +43,8 @@ export default function AttendancePage() {
     loadAttendance();
     loadProfile();
   }, []);
+
+  const isDataOfficer = profile?.role === "PERMINTAAN_DATA";
 
   const handleCheckIn = async () => {
     setLoading(true);
@@ -87,53 +90,27 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe,transparent_60%),linear-gradient(120deg,#fff7ed,#f8fafc)] px-6 py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe,transparent_60%),linear-gradient(120deg,#fff7ed,#f8fafc)] px-6 py-10">
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Presensi Permintaan Data
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold text-zinc-900">
-              Presensi Datang & Pulang
-            </h1>
-            <p className="mt-2 text-sm text-zinc-600">
-              Datang: {attendance?.checkInAt ? "Sudah" : "Belum"} | Pulang:{" "}
+        <AppNav />
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">
+            Presensi Permintaan Data
+          </p>
+          <h1 className="mt-3 text-3xl font-bold text-zinc-900">
+            Presensi Datang & Pulang
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            Datang:{" "}
+            <span className={attendance?.checkInAt ? "font-semibold text-emerald-600" : "text-zinc-400"}>
+              {attendance?.checkInAt ? "Sudah" : "Belum"}
+            </span>
+            {" "}&nbsp;·&nbsp;{" "}
+            Pulang:{" "}
+            <span className={attendance?.checkOutAt ? "font-semibold text-emerald-600" : "text-zinc-400"}>
               {attendance?.checkOutAt ? "Sudah" : "Belum"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {profile ? (
-              <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 py-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
-                  {profile.nama
-                    .split(" ")
-                    .map((part) => part[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()}
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-zinc-900">
-                    {profile.nama}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                    {profile.role.replace("_", " ")}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                window.location.href = "/login";
-              }}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
-            >
-              Logout
-            </button>
-          </div>
+            </span>
+          </p>
         </header>
 
         <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">

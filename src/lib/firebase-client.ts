@@ -11,7 +11,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const hasConfig = Object.values(firebaseConfig).every(Boolean);
+const requiredConfigKeys: Array<keyof typeof firebaseConfig> = [
+  "apiKey",
+  "databaseURL",
+  "projectId",
+];
+const hasConfig = requiredConfigKeys.every((key) => Boolean(firebaseConfig[key]));
+
+if (!hasConfig && process.env.NODE_ENV !== "production") {
+  const missing = requiredConfigKeys.filter((key) => !firebaseConfig[key]);
+  if (missing.length) {
+    console.warn(
+      `[firebase-client] Firebase disabled, missing: ${missing.join(", ")}`,
+    );
+  }
+}
 
 let app: FirebaseApp | null = null;
 

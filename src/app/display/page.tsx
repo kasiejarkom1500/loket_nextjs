@@ -43,6 +43,9 @@ export default function DisplayPage() {
   const [now, setNow] = useState<Date | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastSoundId = useRef<number | null>(null);
+  const lastStateSyncAt = useRef<number>(0);
+  const enablePollFallback =
+    process.env.NEXT_PUBLIC_DISPLAY_POLL_FALLBACK === "1";
 
   const buildAnnouncementFiles = useCallback(
     (queueNumber: string, _counterId: number, serviceName: string) => {
@@ -94,45 +97,68 @@ export default function DisplayPage() {
     return () => clearInterval(t);
   }, []);
 
+  const fetchOnce = useCallback(async () => {
+    const response = await fetch("/api/queue/current");
+    if (!response.ok) return;
+    const data = await response.json();
+    setState(data);
+    lastStateSyncAt.current = Date.now();
+  }, []);
+
   useEffect(() => {
-    if (firebaseClientReady && firebaseClientDb) {
-      const stateRef = ref(firebaseClientDb, "state");
-      const soundRef = ref(firebaseClientDb, "sound");
-      const unsubscribeState = onValue(stateRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setState(snapshot.val());
-        }
-      });
-      const unsubscribeSound = onValue(soundRef, (snapshot) => {
-        const value = snapshot.val() as SoundEvent | null;
-        if (!value || !audioEnabled) {
-          return;
-        }
-        if (lastSoundId.current === value.id) {
-          return;
-        }
-        lastSoundId.current = value.id;
-        const files = buildAnnouncementFiles(
-          value.number,
-          value.counterId,
-          value.serviceName,
-        );
-        playAudioSequence(files).catch(() => {});
-      });
-      return () => {
-        unsubscribeState();
-        unsubscribeSound();
-      };
+    fetchOnce();
+
+    if (!firebaseClientReady || !firebaseClientDb) {
+      if (!enablePollFallback) {
+        return;
+      }
+      const poll = setInterval(fetchOnce, 5000);
+      return () => clearInterval(poll);
     }
 
-    const fetchOnce = async () => {
-      const response = await fetch("/api/queue/current");
-      if (!response.ok) return;
-      const data = await response.json();
-      setState(data);
+    const stateRef = ref(firebaseClientDb, "state");
+    const soundRef = ref(firebaseClientDb, "sound");
+    const unsubscribeState = onValue(stateRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setState(snapshot.val());
+        lastStateSyncAt.current = Date.now();
+      } else {
+        fetchOnce();
+      }
+    });
+    const unsubscribeSound = onValue(soundRef, (snapshot) => {
+      const value = snapshot.val() as SoundEvent | null;
+      if (!value || !audioEnabled) {
+        return;
+      }
+      if (lastSoundId.current === value.id) {
+        return;
+      }
+      lastSoundId.current = value.id;
+      const files = buildAnnouncementFiles(
+        value.number,
+        value.counterId,
+        value.serviceName,
+      );
+      playAudioSequence(files).catch(() => {});
+    });
+
+    const fallback = enablePollFallback
+      ? setInterval(() => {
+          if (Date.now() - lastStateSyncAt.current > 15000) {
+            fetchOnce();
+          }
+        }, 5000)
+      : null;
+
+    return () => {
+      unsubscribeState();
+      unsubscribeSound();
+      if (fallback) {
+        clearInterval(fallback);
+      }
     };
-    fetchOnce();
-  }, [audioEnabled, buildAnnouncementFiles, playAudioSequence]);
+  }, [audioEnabled, buildAnnouncementFiles, fetchOnce, playAudioSequence]);
 
   const calledList = useMemo(() => state?.called ?? [], [state]);
   const calledActive = useMemo(

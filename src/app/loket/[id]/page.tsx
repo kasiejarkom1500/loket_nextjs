@@ -104,16 +104,6 @@ export default function LoketPage() {
   }, []);
 
   useEffect(() => {
-    if (firebaseClientReady && firebaseClientDb) {
-      const stateRef = ref(firebaseClientDb, "state");
-      const unsubscribe = onValue(stateRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setState(snapshot.val());
-        }
-      });
-      return () => unsubscribe();
-    }
-
     const fetchOnce = async () => {
       const response = await fetch("/api/queue/current");
       if (!response.ok) {
@@ -122,7 +112,23 @@ export default function LoketPage() {
       const data = await response.json();
       setState(data);
     };
+
     fetchOnce();
+
+    if (!firebaseClientReady || !firebaseClientDb) {
+      return;
+    }
+
+    const stateRef = ref(firebaseClientDb, "state");
+    const unsubscribe = onValue(stateRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setState(snapshot.val());
+      } else {
+        fetchOnce();
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {

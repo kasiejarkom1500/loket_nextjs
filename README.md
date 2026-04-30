@@ -121,6 +121,38 @@ Catatan untuk profile `localdb`:
 3) Akses:
 - App: `http://localhost:3000`
 
+### Mount Firebase Service Account (disarankan)
+
+Credential Firebase Admin SDK (`serviceAccount.json`) sebaiknya **tidak dibundel ke image**.
+Simpan file JSON di server (atau di folder repo di host), lalu mount sebagai volume read-only.
+
+Contoh jika file ada di folder repo host `./firebase/serviceAccount.json`:
+
+```yml
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./firebase/serviceAccount.json:/app/firebase/serviceAccount.json:ro
+```
+
+Lalu pastikan `.env` berisi:
+
+```env
+FIREBASE_SERVICE_ACCOUNT_PATH="firebase/serviceAccount.json"
+```
+
+Contoh jika file ada di path server (absolut), misal `/opt/loket/serviceAccount.json`:
+
+```yml
+    volumes:
+      - /opt/loket/serviceAccount.json:/app/firebase/serviceAccount.json:ro
+```
+
 Catatan:
 - Container `app` akan menjalankan `prisma db push` dan `prisma db seed` saat start.
 - Untuk mematikan auto push/seed, set env:

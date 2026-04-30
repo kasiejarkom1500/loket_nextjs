@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env*
+firebase/*.json
+google/*.json
+*.log
+coverage
+out
+build

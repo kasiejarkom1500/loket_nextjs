@@ -11,10 +11,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 FROM deps AS builder
-COPY prisma ./prisma
-COPY public ./public
-COPY src ./src
-COPY middleware.ts next-env.d.ts next.config.ts tsconfig.json postcss.config.mjs eslint.config.mjs ./
+COPY . .
 RUN npx prisma generate
 RUN npm run build
 
@@ -26,9 +23,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/middleware.ts ./middleware.ts
-COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/scripts ./scripts
 
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
@@ -38,4 +33,3 @@ ENV PORT=3000
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["npm", "start"]
-

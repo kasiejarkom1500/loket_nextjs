@@ -4,11 +4,12 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 const services = [
-  { code: "A", name: "Customer Service", color: "#f59e0b" },
-  { code: "B", name: "Teller", color: "#2563eb" },
+  { code: "A", name: "Umum", color: "#f59e0b" },
+  { code: "B", name: "Permintaan Data", color: "#2563eb" },
+  { code: "C", name: "Pelayanan Publik", color: "#25eb71" },
 ];
 
-const counters = [{ name: "Loket 1" }, { name: "Loket 2" }];
+const counters = [{ name: "Loket Pelayanan Publik" }, { name: "Loket Permintaan Data" }];
 
 async function main() {
   for (const service of services) {

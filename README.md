@@ -109,6 +109,15 @@ Prerequisite:
 docker compose up --build
 ```
 
+Jika ingin menjalankan MySQL lokal via Docker (opsional), aktifkan profile `localdb`:
+
+```bash
+docker compose --profile localdb up --build
+```
+
+Catatan untuk profile `localdb`:
+- Atur `DATABASE_URL` di `.env` menjadi `mysql://root:@db:3306/antrian_db`
+
 3) Akses:
 - App: `http://localhost:3000`
 

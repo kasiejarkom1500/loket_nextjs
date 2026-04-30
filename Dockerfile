@@ -6,11 +6,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
 FROM base AS deps
+ENV NODE_ENV=development
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 
 FROM deps AS builder
+ENV NODE_ENV=production
 COPY . .
 RUN npx prisma generate
 RUN npm run build

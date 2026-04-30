@@ -97,6 +97,27 @@ Kolom yang dipakai:
 Realtime display dan loket memakai Firebase Realtime Database. Pastikan
 konfigurasi Firebase sudah benar agar update live berjalan.
 
+## Deploy dengan Docker
+
+Prerequisite:
+- Docker + Docker Compose
+
+1) Pastikan `.env` sudah terisi (lihat `.env.example`).
+2) Jalankan:
+
+```bash
+docker compose up --build
+```
+
+3) Akses:
+- App: `http://localhost:3000`
+
+Catatan:
+- Container `app` akan menjalankan `prisma db push` dan `prisma db seed` saat start.
+- Untuk mematikan auto push/seed, set env:
+  - `PRISMA_DB_PUSH_ON_START=0`
+  - `PRISMA_SEED_ON_START=0`
+
 ## Lisensi
 
 Private - internal BPS Provinsi Jambi.

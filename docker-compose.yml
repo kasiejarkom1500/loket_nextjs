@@ -1,0 +1,37 @@
+services:
+  db:
+    image: mysql:8.4
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: antrian_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_ROOT_PASSWORD: ""
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: mysql://root:@db:3306/antrian_db
+      WAIT_FOR_DB: "1"
+      PRISMA_DB_PUSH_ON_START: "1"
+      PRISMA_SEED_ON_START: "1"
+      NEXT_PUBLIC_DISPLAY_POLL_FALLBACK: "0"
+    env_file:
+      - .env
+
+volumes:
+  mysql_data:
+

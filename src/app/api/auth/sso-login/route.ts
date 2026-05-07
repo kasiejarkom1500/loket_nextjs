@@ -1,23 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signSession } from "@/lib/auth";
+import { getCurrentShift, getTodayRange } from "@/lib/time";
 
 const SESSION_COOKIE = "loket_session";
 const SESSION_SECONDS = 60 * 60 * 8;
-
-const getCurrentShift = () => {
-  const hour = new Date().getHours();
-  return hour < 12 ? "PAGI" : "SIANG";
-};
-
-const getTodayRange = () => {
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return { start, end };
-};
 
 type SsoLoginResponse = {
   status?: number;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { pushRealtimeState } from "@/lib/realtime";
+import { getTodayRange } from "@/lib/time";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -42,9 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
-  const now = DateTime.local();
-  const startOfDay = now.startOf("day").toJSDate();
-  const endOfDay = now.endOf("day").toJSDate();
+  const { start: startOfDay, end: endOfDay } = getTodayRange();
 
   const todayCount = await prisma.queue.count({
     where: {

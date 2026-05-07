@@ -108,17 +108,36 @@ export default function DisplayPage() {
   useEffect(() => {
     fetchOnce();
 
+    console.log("[display] firebase init", {
+      firebaseClientReady,
+      hasDb: Boolean(firebaseClientDb),
+      enablePollFallback,
+    });
+
     if (!firebaseClientReady || !firebaseClientDb) {
+      console.warn("[display] firebase subscribe skipped", {
+        firebaseClientReady,
+        hasDb: Boolean(firebaseClientDb),
+        enablePollFallback,
+      });
       if (!enablePollFallback) {
         return;
       }
+      console.log("[display] polling fallback enabled");
       const poll = setInterval(fetchOnce, 5000);
       return () => clearInterval(poll);
     }
 
     const stateRef = ref(firebaseClientDb, "state");
     const soundRef = ref(firebaseClientDb, "sound");
+    console.log("[display] subscribing to firebase", {
+      statePath: "state",
+      soundPath: "sound",
+    });
     const unsubscribeState = onValue(stateRef, (snapshot) => {
+      console.log("[display] state snapshot", {
+        exists: snapshot.exists(),
+      });
       if (snapshot.exists()) {
         setState(snapshot.val());
         lastStateSyncAt.current = Date.now();
@@ -127,6 +146,9 @@ export default function DisplayPage() {
       }
     });
     const unsubscribeSound = onValue(soundRef, (snapshot) => {
+      console.log("[display] sound snapshot", {
+        exists: snapshot.exists(),
+      });
       const value = snapshot.val() as SoundEvent | null;
       if (!value || !audioEnabled) {
         return;

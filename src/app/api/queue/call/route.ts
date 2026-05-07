@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { pushRealtimeState } from "@/lib/realtime";
 import { verifySession } from "@/lib/auth";
+import { getCurrentShift, getTodayRange } from "@/lib/time";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -37,12 +38,8 @@ export async function POST(request: Request) {
     }
   }
 
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  const currentShift = now.getHours() < 12 ? "PAGI" : "SIANG";
+  const { start, end } = getTodayRange();
+  const currentShift = getCurrentShift();
 
   const isDataService = (serviceName: string) =>
     serviceName.toLowerCase().includes("permintaan data");

@@ -2,20 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/auth";
-
-const getCurrentShift = () => {
-  const hour = new Date().getHours();
-  return hour < 12 ? "PAGI" : "SIANG";
-};
-
-const getTodayRange = () => {
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return { start, end };
-};
+import { getCurrentShift, getTodayRange } from "@/lib/time";
 
 export async function GET() {
   const token = (await cookies()).get("loket_session")?.value;

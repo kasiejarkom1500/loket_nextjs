@@ -60,7 +60,7 @@ function LoginForm() {
       router.replace(redirect);
       return;
     }
-    if (data.role === "ADMIN" && data.mode === "admin") {
+    if (data.role === "ADMIN") {
       router.replace("/admin/assignments");
       return;
     }
@@ -102,7 +102,7 @@ function LoginForm() {
       router.replace(redirect);
       return;
     }
-    if (data.role === "ADMIN" && data.mode === "admin") {
+    if (data.role === "ADMIN") {
       router.replace("/admin/assignments");
       return;
     }

@@ -59,22 +59,26 @@ export async function POST(request: Request) {
     });
 
     if (!assignment) {
-      return NextResponse.json(
-        { error: "Tidak ada penugasan aktif untuk shift ini." },
-        { status: 403 },
-      );
-    }
+      if (user.isAdmin) {
+        role = "ADMIN";
+      } else {
+        return NextResponse.json(
+          { error: "Tidak ada penugasan aktif untuk shift ini." },
+          { status: 403 },
+        );
+      }
+    } else {
+      role = assignment.role;
+      shift = assignment.shift;
+      assignmentId = assignment.id;
+      counterId = assignment.counterId ?? null;
 
-    role = assignment.role;
-    shift = assignment.shift;
-    assignmentId = assignment.id;
-    counterId = assignment.counterId ?? null;
-
-    if (role === "LAYANAN_PUBLIK" && !counterId) {
-      return NextResponse.json(
-        { error: "Penugasan belum memiliki loket." },
-        { status: 400 },
-      );
+      if (role === "LAYANAN_PUBLIK" && !counterId) {
+        return NextResponse.json(
+          { error: "Penugasan belum memiliki loket." },
+          { status: 400 },
+        );
+      }
     }
   }
 

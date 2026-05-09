@@ -43,8 +43,10 @@ export async function POST(request: Request) {
     typeof body?.publikasi === "string" ? body.publikasi.trim() : "";
   const skdLinkSent =
     typeof body?.skdLinkSent === "string" ? body.skdLinkSent.trim() : "";
-  const responded =
-    typeof body?.responded === "string" ? body.responded.trim() : "";
+  const completionStatus =
+    typeof body?.completionStatus === "string"
+      ? body.completionStatus.trim()
+      : "";
 
   if (!rowNumber || rowNumber < 2) {
     return NextResponse.json(
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   const quotedSheetName = `'${sheetName.replace(/'/g, "''")}'`;
-  const values = await getSheetValues(`${quotedSheetName}!A1:Q1`);
+  const values = await getSheetValues(`${quotedSheetName}!A1:Z1`);
   const headers = values[0] ?? [];
   const headerIndex = new Map<string, number>();
   headers.forEach((header, index) => {
@@ -73,7 +75,6 @@ export async function POST(request: Request) {
     PUBLIKASI: "PUBLIKASI YANG DISARANKAN",
     KONSULTASI: "Petugas Konsultasi",
     SKD: "Apakah sudah dikirimkan link SKD ?",
-    RESPON: "YBS Telah Merespon",
   };
   for (const label of Object.values(requiredHeaders)) {
     if (!headerIndex.has(normalizeHeader(label))) {
@@ -94,9 +95,20 @@ export async function POST(request: Request) {
   const skdCol = toColumnLetter(
     headerIndex.get(normalizeHeader(requiredHeaders.SKD)) as number,
   );
-  const respondedCol = toColumnLetter(
-    headerIndex.get(normalizeHeader(requiredHeaders.RESPON)) as number,
+  const completionHeaderCandidates = [
+    "Status Penyelesaian",
+    "Status Selesai",
+    "Status",
+  ];
+  const completionHeader = completionHeaderCandidates.find((candidate) =>
+    headerIndex.has(normalizeHeader(candidate)),
   );
+  const completionCol = completionHeader
+    ? toColumnLetter(headerIndex.get(normalizeHeader(completionHeader)) as number)
+    : null;
+  const keteranganCol = headerIndex.has(normalizeHeader("Keterangan"))
+    ? toColumnLetter(headerIndex.get(normalizeHeader("Keterangan")) as number)
+    : null;
 
   updates.push({
     rangeA1: `${quotedSheetName}!${publishCol}${rowNumber}`,
@@ -110,10 +122,19 @@ export async function POST(request: Request) {
     rangeA1: `${quotedSheetName}!${skdCol}${rowNumber}`,
     value: skdLinkSent,
   });
-  updates.push({
-    rangeA1: `${quotedSheetName}!${respondedCol}${rowNumber}`,
-    value: responded,
-  });
+
+  if (completionCol) {
+    updates.push({
+      rangeA1: `${quotedSheetName}!${completionCol}${rowNumber}`,
+      value: completionStatus,
+    });
+  } else if (keteranganCol) {
+    const prefix = completionStatus ? `Status: ${completionStatus}` : "";
+    updates.push({
+      rangeA1: `${quotedSheetName}!${keteranganCol}${rowNumber}`,
+      value: prefix,
+    });
+  }
 
   try {
     await updateSheetValues(updates);

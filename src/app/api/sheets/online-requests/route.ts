@@ -38,7 +38,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const values = await getSheetValues(`'${sheetName.replace(/'/g, "''")}'!A:Q`);
+  const values = await getSheetValues(
+    `'${sheetName.replace(/'/g, "''")}'!A:Z`,
+  );
   if (values.length === 0) {
     return NextResponse.json({ items: [] });
   }
@@ -74,8 +76,12 @@ export async function GET(request: Request) {
         publikasi: getCell(row, "PUBLIKASI YANG DISARANKAN"),
         petugasKonsultasi: getCell(row, "Petugas Konsultasi"),
         skdLinkSent: getCell(row, "Apakah sudah dikirimkan link SKD ?"),
-        responded: getCell(row, "YBS Telah Merespon"),
         keterangan: getCell(row, "Keterangan"),
+        completionStatus:
+          getCell(row, "Status Penyelesaian") ||
+          getCell(row, "Status Selesai") ||
+          getCell(row, "Status") ||
+          "",
       };
       return item;
     })

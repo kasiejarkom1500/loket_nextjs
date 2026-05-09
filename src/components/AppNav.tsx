@@ -102,6 +102,11 @@ function AppNavInner() {
         label: "Presensi",
         icon: "📅",
       },
+      {
+        href: "/online-requests",
+        label: "Permintaan Online",
+        icon: "💬",
+      },
     ];
   } else {
     navItems = DATA_OFFICER_NAV;

@@ -60,7 +60,10 @@ export async function POST(request: Request) {
 
     if (!assignment) {
       if (user.isAdmin) {
-        role = "ADMIN";
+        role = "LAYANAN_PUBLIK";
+        shift = currentShift;
+        assignmentId = null;
+        counterId = null;
       } else {
         return NextResponse.json(
           { error: "Tidak ada penugasan aktif untuk shift ini." },

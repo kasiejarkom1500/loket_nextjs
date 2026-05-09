@@ -93,7 +93,7 @@ function StatusSelector({
       value: "Selesai pelayanan publik",
       label: "Pelayanan Publik",
       icon: "🏛️",
-      desc: "Selesai layanan informasi publik.",
+      desc: "Selesai layanan informasi publik/pengaduan.",
       border: "border-violet-300 bg-violet-50 ring-violet-500",
       idle: "border-zinc-200 bg-white hover:border-violet-200 hover:bg-violet-50/40",
     },

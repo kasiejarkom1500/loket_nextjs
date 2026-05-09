@@ -73,7 +73,6 @@ export async function POST(request: Request) {
 
   const requiredHeaders: Record<string, string> = {
     PUBLIKASI: "PUBLIKASI YANG DISARANKAN",
-    KONSULTASI: "Petugas Konsultasi",
     SKD: "Apakah sudah dikirimkan link SKD ?",
   };
   for (const label of Object.values(requiredHeaders)) {
@@ -85,12 +84,23 @@ export async function POST(request: Request) {
     }
   }
 
+  const officerHeader =
+    session.role === "LAYANAN_PUBLIK"
+      ? "Petugas Pelayanan dan Pengaduan"
+      : "Petugas Konsultasi";
+  if (!headerIndex.has(normalizeHeader(officerHeader))) {
+    return NextResponse.json(
+      { error: `Kolom tidak ditemukan: ${officerHeader}` },
+      { status: 400 },
+    );
+  }
+
   const updates: Array<{ rangeA1: string; value: string }> = [];
   const publishCol = toColumnLetter(
     headerIndex.get(normalizeHeader(requiredHeaders.PUBLIKASI)) as number,
   );
-  const consultantCol = toColumnLetter(
-    headerIndex.get(normalizeHeader(requiredHeaders.KONSULTASI)) as number,
+  const officerCol = toColumnLetter(
+    headerIndex.get(normalizeHeader(officerHeader)) as number,
   );
   const skdCol = toColumnLetter(
     headerIndex.get(normalizeHeader(requiredHeaders.SKD)) as number,
@@ -115,7 +125,7 @@ export async function POST(request: Request) {
     value: publikasi,
   });
   updates.push({
-    rangeA1: `${quotedSheetName}!${consultantCol}${rowNumber}`,
+    rangeA1: `${quotedSheetName}!${officerCol}${rowNumber}`,
     value: session.nama,
   });
   updates.push({

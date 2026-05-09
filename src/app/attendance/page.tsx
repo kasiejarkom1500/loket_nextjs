@@ -8,12 +8,8 @@ export default function AttendancePage() {
     checkInAt: string | null;
     checkOutAt: string | null;
   } | null>(null);
-  const [profile, setProfile] = useState<{
-    nama: string;
-    username: string;
-    role: string;
-  } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [form, setForm] = useState({
     dataRequestOffline: "",
@@ -32,19 +28,8 @@ export default function AttendancePage() {
       const data = await response.json();
       setAttendance(data.attendance ?? null);
     };
-    const loadProfile = async () => {
-      const response = await fetch("/api/auth/me");
-      if (!response.ok) {
-        return;
-      }
-      const data = await response.json();
-      setProfile(data.user ?? null);
-    };
     loadAttendance();
-    loadProfile();
   }, []);
-
-  const isDataOfficer = profile?.role === "PERMINTAAN_DATA";
 
   const handleCheckIn = async () => {
     setLoading(true);
@@ -69,7 +54,7 @@ export default function AttendancePage() {
       !form.dataConsultOnline
     ) {
       setStatus("Lengkapi semua isian presensi pulang terlebih dahulu.");
-      return;
+      return false;
     }
     setLoading(true);
     const response = await fetch("/api/attendance/check-out", {
@@ -81,12 +66,13 @@ export default function AttendancePage() {
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       setStatus(data.error ?? "Gagal presensi pulang.");
-      return;
+      return false;
     }
     const data = await response.json();
     setAttendance(data.attendance ?? null);
     setStatus("Presensi pulang tersimpan.");
     setTimeout(() => setStatus(null), 3000);
+    return true;
   };
 
   return (
@@ -113,107 +99,168 @@ export default function AttendancePage() {
           </p>
         </header>
 
-        <section className="rounded-3xl border border-white/70 bg-white/80 p-8 shadow-sm">
-          <button
-            type="button"
-            onClick={handleCheckIn}
-            disabled={loading || Boolean(attendance?.checkInAt)}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-6 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-          >
-            Presensi Datang
-          </button>
-
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Permintaan data datang langsung
-              </label>
-              <input
-                type="number"
-                value={form.dataRequestOffline}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    dataRequestOffline: event.target.value,
-                  }))
-                }
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-              />
+        <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                Presensi Petugas Permintaan Data
+              </p>
+              <p className="mt-2 text-sm text-zinc-600">
+                Datang: {attendance?.checkInAt ? "Sudah" : "Belum"} | Pulang:{" "}
+                {attendance?.checkOutAt ? "Sudah" : "Belum"}
+              </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Konsultasi statistik datang langsung
-              </label>
-              <input
-                type="number"
-                value={form.dataConsultOffline}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    dataConsultOffline: event.target.value,
-                  }))
-                }
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Permintaan data online (WA)
-              </label>
-              <input
-                type="number"
-                value={form.dataRequestOnline}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    dataRequestOnline: event.target.value,
-                  }))
-                }
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Konsultasi statistik online (WA)
-              </label>
-              <input
-                type="number"
-                value={form.dataConsultOnline}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    dataConsultOnline: event.target.value,
-                  }))
-                }
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-              />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleCheckIn}
+                disabled={loading || Boolean(attendance?.checkInAt)}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+              >
+                Presensi Datang
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(true)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+              >
+                Presensi Pulang
+              </button>
             </div>
           </div>
-
-          <div className="mt-4">
-            <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-              Komentar/Saran (opsional)
-            </label>
-            <textarea
-              value={form.dataNotes}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, dataNotes: event.target.value }))
-              }
-              className="mt-2 min-h-[90px] w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleCheckOut}
-            disabled={loading || Boolean(attendance?.checkOutAt)}
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-emerald-600 px-6 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-400"
-          >
-            Presensi Pulang
-          </button>
-          {status ? <p className="mt-4 text-sm text-zinc-600">{status}</p> : null}
         </section>
+        {status ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+            {status}
+          </div>
+        ) : null}
       </div>
+      {status ? (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 shadow-lg">
+          {status}
+        </div>
+      ) : null}
+      {attendanceOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
+          <div className="w-full max-w-4xl rounded-3xl border border-white/70 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 px-8 py-5">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Presensi Pulang - Permintaan Data
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(false)}
+                className="text-sm font-semibold text-zinc-500 hover:text-zinc-800"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="px-8 py-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Permintaan data datang langsung
+                  </label>
+                  <input
+                    type="number"
+                    value={form.dataRequestOffline}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        dataRequestOffline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Konsultasi statistik datang langsung
+                  </label>
+                  <input
+                    type="number"
+                    value={form.dataConsultOffline}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        dataConsultOffline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Permintaan data online (WA)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.dataRequestOnline}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        dataRequestOnline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                    Konsultasi statistik online (WA)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.dataConsultOnline}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        dataConsultOnline: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Komentar/Saran (opsional)
+                </label>
+                <textarea
+                  value={form.dataNotes}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, dataNotes: event.target.value }))
+                  }
+                  className="mt-2 min-h-[90px] w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 border-t border-zinc-100 bg-zinc-50 px-8 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-300 bg-white px-6 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const saved = await handleCheckOut();
+                  if (saved) {
+                    setAttendanceOpen(false);
+                  }
+                }}
+                disabled={loading || Boolean(attendance?.checkOutAt)}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-emerald-600 px-6 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-400"
+              >
+                Simpan Presensi Pulang
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

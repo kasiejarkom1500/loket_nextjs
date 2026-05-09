@@ -141,6 +141,14 @@ const PUBLIC_OFFICER_MENU: MenuItem[] = [
     color: "from-emerald-500 to-teal-600",
     accent: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
   },
+  {
+    icon: "💬",
+    title: "Permintaan Online",
+    desc: "Tindak lanjuti permintaan pelayanan publik dari Google Form.",
+    href: "/online-requests",
+    color: "from-blue-500 to-indigo-600",
+    accent: "bg-blue-50 border-blue-200 hover:border-blue-300",
+  },
 ];
 
 const DATA_OFFICER_MENU: MenuItem[] = [

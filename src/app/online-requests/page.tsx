@@ -14,18 +14,13 @@ type OnlineRequest = {
   kegunaan: string;
   publikasi: string;
   petugasKonsultasi: string;
+  petugasPelayananPengaduan: string;
   skdLinkSent: string;
   keterangan: string;
   completionStatus?: string;
 };
 
 const skdOptions = ["", "Telah dikirim", "Belum dikirim", "Tidak dikirim"] as const;
-const completionOptions = [
-  "",
-  "Selesai transaksi data",
-  "Selesai SKD",
-  "Selesai pelayanan publik",
-] as const;
 
 /* ── Status badge config ── */
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -159,6 +154,7 @@ export default function OnlineRequestsPage() {
     completionStatus: "",
   });
   const [saving, setSaving] = useState(false);
+  const isPublicServiceOfficer = profile?.role === "LAYANAN_PUBLIK";
 
   const load = async () => {
     setLoading(true);
@@ -471,7 +467,9 @@ export default function OnlineRequestsPage() {
                         {item.skdLinkSent || "-"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-xs text-zinc-500">
-                        {item.petugasKonsultasi || "-"}
+                        {item.petugasPelayananPengaduan ||
+                          item.petugasKonsultasi ||
+                          "-"}
                       </td>
                       <td className="sticky right-0 bg-white px-4 py-3.5 text-right group-hover:bg-blue-50/40">
                         <button
@@ -709,8 +707,12 @@ export default function OnlineRequestsPage() {
 
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
                     <span className="font-bold">Info:</span> Saat simpan, kolom{" "}
-                    <b>Petugas Konsultasi</b> akan otomatis diisi dengan nama akun
-                    yang sedang login.
+                    <b>
+                      {isPublicServiceOfficer
+                        ? "Petugas Pelayanan dan Pengaduan"
+                        : "Petugas Konsultasi"}
+                    </b>{" "}
+                    akan otomatis diisi dengan nama akun yang sedang login.
                   </div>
                 </div>
               </div>

@@ -75,6 +75,10 @@ export async function GET(request: Request) {
         kegunaan: getCell(row, "Kegunaan Data"),
         publikasi: getCell(row, "PUBLIKASI YANG DISARANKAN"),
         petugasKonsultasi: getCell(row, "Petugas Konsultasi"),
+        petugasPelayananPengaduan: getCell(
+          row,
+          "Petugas Pelayanan dan Pengaduan",
+        ),
         skdLinkSent: getCell(row, "Apakah sudah dikirimkan link SKD ?"),
         keterangan: getCell(row, "Keterangan"),
         completionStatus:

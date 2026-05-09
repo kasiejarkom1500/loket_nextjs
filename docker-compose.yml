@@ -36,6 +36,7 @@ services:
       PRISMA_DB_PUSH_ON_START: "1"
       PRISMA_SEED_ON_START: "1"
       NEXT_PUBLIC_DISPLAY_POLL_FALLBACK: "0"
+      NEXT_PUBLIC_ONLINE_REQUESTS_POLL_MS: "15000"
     env_file:
       - .env
     volumes:

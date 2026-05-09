@@ -149,6 +149,7 @@ export default function OnlineRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+  const POLL_MS = Number(process.env.NEXT_PUBLIC_ONLINE_REQUESTS_POLL_MS ?? "15000");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<OnlineRequest | null>(null);
   const [profile, setProfile] = useState<{ role: string } | null>(null);
@@ -182,6 +183,21 @@ export default function OnlineRequestsPage() {
   useEffect(() => {
     load();
   }, [pendingOnly]);
+
+  // Auto-refresh list (helps avoid manual refresh after new Google Form submissions)
+  useEffect(() => {
+    if (!Number.isFinite(POLL_MS) || POLL_MS <= 0) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      // Avoid overwriting the current editing modal state
+      if (selected || saving) {
+        return;
+      }
+      load();
+    }, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [POLL_MS, selected, saving, pendingOnly]);
 
   useEffect(() => {
     const loadProfile = async () => {

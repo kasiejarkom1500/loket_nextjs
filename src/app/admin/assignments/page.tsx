@@ -176,6 +176,7 @@ export default function AssignmentPage() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadMonth, setUploadMonth] = useState(() => filterDate.slice(0, 7));
 
   const selectedRole = form.role;
 
@@ -193,6 +194,7 @@ export default function AssignmentPage() {
 
   useEffect(() => { refreshAssignments(); }, [filterDate]);
   useEffect(() => { setPage(1); }, [filterDate]);
+  useEffect(() => { setUploadMonth(filterDate.slice(0, 7)); }, [filterDate]);
 
   const totalPages = Math.max(1, Math.ceil(assignments.length / PAGE_SIZE));
   const paginated = useMemo(() => assignments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [assignments, page]);
@@ -243,7 +245,9 @@ export default function AssignmentPage() {
     if (!fileInput?.files?.length) { setUploadStatus("Pilih file Excel terlebih dahulu."); return; }
     const data = new FormData(); data.append("file", fileInput.files[0]);
     setUploading(true);
-    const res = await fetch("/api/admin/assignments/import", { method: "POST", body: data });
+    const month = uploadMonth?.trim();
+    const qs = month ? `?month=${encodeURIComponent(month)}` : "";
+    const res = await fetch(`/api/admin/assignments/import${qs}`, { method: "POST", body: data });
     setUploading(false);
     if (!res.ok) { const d = await res.json().catch(() => ({})); setUploadStatus(d.error ?? "Gagal upload."); return; }
     const payload = await res.json();
@@ -278,6 +282,7 @@ export default function AssignmentPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <input aria-label="Bulan" type="month" value={uploadMonth} onChange={(e) => setUploadMonth(e.target.value)} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
             <input name="file" type="file" accept=".xlsx" className="text-xs text-zinc-600" />
             <button type="submit" disabled={uploading} className="inline-flex h-9 items-center gap-2 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400">
               {uploading ? "Mengunggah..." : "Upload Excel"}

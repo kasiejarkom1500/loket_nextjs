@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
@@ -12,6 +13,7 @@ const navItems = [
   { href: "/admin/rating-recap", label: "Rekap Rating", icon: "⭐" },
   { href: "/admin/attendance-recap", label: "Rekap Presensi", icon: "📊" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
+  { href: "/profile", label: "Akun", icon: "👤" },
 ];
 
 function getInitials(name: string) {
@@ -54,13 +56,13 @@ export default function AdminNav() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-sm">
         {/* Logo + Home */}
         <div className="flex flex-wrap items-center gap-2">
-          <a
+          <Link
             href="/"
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900"
           >
             <span>🏠</span>
             <span className="hidden sm:inline">Beranda</span>
-          </a>
+          </Link>
 
           <div className="h-5 w-px bg-zinc-200" />
 

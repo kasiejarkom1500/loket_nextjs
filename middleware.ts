@@ -71,6 +71,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/profile")) {
+    const session = await getSession(request);
+    if (!session) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const session = await getSession(request);
     if (!session || !session.isAdmin) {
@@ -93,6 +102,7 @@ export const config = {
     "/attendance",
     "/online-requests/:path*",
     "/api/sheets/:path*",
+    "/profile/:path*",
     "/admin/:path*",
     "/api/admin/:path*",
   ],

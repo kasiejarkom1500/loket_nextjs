@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 type Profile = {
@@ -25,11 +26,13 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/rating-recap", label: "Rekap Rating", icon: "⭐" },
   { href: "/admin/attendance-recap", label: "Rekap Presensi", icon: "📊" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
+  { href: "/profile", label: "Akun", icon: "👤" },
 ];
 
 const DATA_OFFICER_NAV: NavItem[] = [
   { href: "/attendance", label: "Presensi", icon: "📅" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
+  { href: "/profile", label: "Akun", icon: "👤" },
 ];
 
 function getInitials(name: string) {
@@ -107,6 +110,11 @@ function AppNavInner() {
         label: "Permintaan Online",
         icon: "💬",
       },
+      {
+        href: "/profile",
+        label: "Akun",
+        icon: "👤",
+      },
     ];
   } else {
     navItems = DATA_OFFICER_NAV;
@@ -121,14 +129,14 @@ function AppNavInner() {
         {/* Left side */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Home */}
-          <a
+          <Link
             href="/"
             className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900"
             title="Beranda"
           >
             <span>🏠</span>
             <span className="hidden sm:inline">Beranda</span>
-          </a>
+          </Link>
 
           {/* Role badge */}
           <div className={`hidden sm:flex items-center gap-1.5 rounded-xl bg-gradient-to-r ${gradient} px-3 py-2`}>

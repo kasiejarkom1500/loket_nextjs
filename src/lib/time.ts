@@ -6,6 +6,7 @@ const DEFAULT_SHIFT_SETTINGS = [
   { shift: "PAGI" as const, startTime: "00:00", endTime: "11:59" },
   { shift: "SIANG" as const, startTime: "12:00", endTime: "23:59" },
 ];
+type ShiftValue = (typeof DEFAULT_SHIFT_SETTINGS)[number]["shift"];
 
 export const getNowInAppTimezone = () => DateTime.now().setZone(APP_TIMEZONE);
 
@@ -30,6 +31,9 @@ const isTimeInRange = (current: number, start: number, end: number) => {
   }
   return current >= start || current <= end;
 };
+
+const minutesSinceShiftStart = (current: number, start: number) =>
+  current >= start ? current - start : current + 24 * 60 - start;
 
 export const getDefaultShiftSettings = () => DEFAULT_SHIFT_SETTINGS;
 
@@ -59,9 +63,22 @@ export const getShiftSettings = async () => {
 };
 
 export const getCurrentShift = async () => {
+  const [currentShift] = await getActiveShifts();
+  if (currentShift) {
+    return currentShift;
+  }
+
+  return getNowInAppTimezone().hour < 12 ? "PAGI" : "SIANG";
+};
+
+export const getActiveShifts = async (): Promise<ShiftValue[]> => {
   const now = getNowInAppTimezone();
   const currentMinutes = now.hour * 60 + now.minute;
   const settings = await getShiftSettings();
+  const activeSettings: Array<{
+    shift: ShiftValue;
+    minutesSinceStart: number;
+  }> = [];
 
   for (const setting of settings) {
     const start = toMinutes(setting.startTime);
@@ -70,11 +87,16 @@ export const getCurrentShift = async () => {
       continue;
     }
     if (isTimeInRange(currentMinutes, start, end)) {
-      return setting.shift;
+      activeSettings.push({
+        shift: setting.shift,
+        minutesSinceStart: minutesSinceShiftStart(currentMinutes, start),
+      });
     }
   }
 
-  return now.hour < 12 ? "PAGI" : "SIANG";
+  return activeSettings
+    .sort((a, b) => a.minutesSinceStart - b.minutesSinceStart)
+    .map((setting) => setting.shift);
 };
 
 export const getTodayRange = () => {

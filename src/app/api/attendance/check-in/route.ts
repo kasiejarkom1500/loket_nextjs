@@ -23,7 +23,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const shift = await getCurrentShift();
+  const shift = session.shift ?? (await getCurrentShift());
   const date = getTodayDate();
   const attendance = await prisma.attendance.upsert({
     where: {

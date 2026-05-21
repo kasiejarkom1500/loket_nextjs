@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const shift = await getCurrentShift();
+  const shift = session.shift ?? (await getCurrentShift());
   const { start, end } = getTodayRange();
   const attendance = await prisma.attendance.findFirst({
     where: {

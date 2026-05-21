@@ -10,6 +10,9 @@ type VisitorItem = {
   status: string;
   createdAt: string;
   staffPurposeDetail: string;
+  publicOfficerName: string;
+  dataOfficerName: string;
+  securityOfficerName: string;
   visitorName: string;
   visitorPhone: string;
   visitorOrigin: string;
@@ -52,7 +55,17 @@ export default function AdminVisitorsPage() {
     const needle = query.trim().toLowerCase();
     if (!needle) return items;
     return items.filter((i) =>
-      [i.number, i.visitorName, i.visitorPhone, i.visitorOrigin, i.serviceName, i.counterName]
+      [
+        i.number,
+        i.visitorName,
+        i.visitorPhone,
+        i.visitorOrigin,
+        i.serviceName,
+        i.counterName,
+        i.publicOfficerName,
+        i.dataOfficerName,
+        i.securityOfficerName,
+      ]
         .join(" ").toLowerCase().includes(needle),
     );
   }, [items, query]);
@@ -113,6 +126,7 @@ export default function AdminVisitorsPage() {
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Loket</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Status</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Tanggal</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Petugas</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Nama</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Telepon</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Asal</th>
@@ -137,6 +151,13 @@ export default function AdminVisitorsPage() {
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5 text-xs text-zinc-500">{new Date(item.createdAt).toLocaleString("id-ID")}</td>
+                  <td className="min-w-[220px] px-4 py-3.5 text-xs text-zinc-600">
+                    <div className="flex flex-col gap-1">
+                      <span><span className="font-semibold text-zinc-800">Layanan:</span> {item.publicOfficerName}</span>
+                      <span><span className="font-semibold text-zinc-800">Data:</span> {item.dataOfficerName}</span>
+                      <span><span className="font-semibold text-zinc-800">Satpam:</span> {item.securityOfficerName}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3.5 text-xs text-zinc-700">{item.visitorName}</td>
                   <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs text-zinc-500">{item.visitorPhone}</td>
                   <td className="px-4 py-3.5 text-xs text-zinc-500">{item.visitorOrigin}</td>
@@ -145,7 +166,7 @@ export default function AdminVisitorsPage() {
                 </tr>
               )) : (
                 <tr>
-                  <td className="px-6 py-12 text-center text-sm text-zinc-400" colSpan={10}>
+                  <td className="px-6 py-12 text-center text-sm text-zinc-400" colSpan={11}>
                     <div className="flex flex-col items-center gap-2">
                       <svg className="h-8 w-8 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>
                       Belum ada data pengunjung.

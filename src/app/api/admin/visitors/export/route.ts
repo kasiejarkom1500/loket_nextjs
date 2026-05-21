@@ -39,7 +39,14 @@ export async function GET(request: Request) {
       createdAt: { gte: range.start, lte: range.end },
       visitorId: { not: null },
     },
-    include: { visitor: true, service: true, counter: true },
+    include: {
+      visitor: true,
+      service: true,
+      counter: true,
+      publicOfficer: true,
+      dataOfficer: true,
+      securityOfficer: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -49,6 +56,9 @@ export async function GET(request: Request) {
     Loket: queue.counter?.name ?? "-",
     Status: queue.status,
     Tanggal: queue.createdAt.toISOString(),
+    "Petugas Layanan Publik": queue.publicOfficer?.nama ?? "-",
+    "Petugas Permintaan Data": queue.dataOfficer?.nama ?? "-",
+    Satpam: queue.securityOfficer?.name ?? "-",
     Nama: queue.visitor?.name ?? "-",
     Telepon: queue.visitor?.phone ?? "-",
     Asal: queue.visitor?.origin ?? "-",

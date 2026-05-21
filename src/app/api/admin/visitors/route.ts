@@ -38,7 +38,14 @@ export async function GET(request: Request) {
       createdAt: { gte: range.start, lte: range.end },
       visitorId: { not: null },
     },
-    include: { visitor: true, service: true, counter: true },
+    include: {
+      visitor: true,
+      service: true,
+      counter: true,
+      publicOfficer: true,
+      dataOfficer: true,
+      securityOfficer: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -50,6 +57,9 @@ export async function GET(request: Request) {
     status: queue.status,
     createdAt: queue.createdAt.toISOString(),
     staffPurposeDetail: queue.staffPurposeDetail ?? "",
+    publicOfficerName: queue.publicOfficer?.nama ?? "-",
+    dataOfficerName: queue.dataOfficer?.nama ?? "-",
+    securityOfficerName: queue.securityOfficer?.name ?? "-",
     visitorName: queue.visitor?.name ?? "-",
     visitorPhone: queue.visitor?.phone ?? "-",
     visitorOrigin: queue.visitor?.origin ?? "-",

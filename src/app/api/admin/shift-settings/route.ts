@@ -8,6 +8,7 @@ type ShiftSettingInput = {
   shift?: unknown;
   startTime?: unknown;
   endTime?: unknown;
+  earlyCheckInBufferMinutes?: unknown;
 };
 
 const isShift = (value: unknown): value is ShiftValue =>
@@ -38,6 +39,10 @@ export async function PUT(request: Request) {
           : fallback.startTime,
       endTime:
         typeof input?.endTime === "string" ? input.endTime : fallback.endTime,
+      earlyCheckInBufferMinutes:
+        input?.earlyCheckInBufferMinutes === undefined
+          ? fallback.earlyCheckInBufferMinutes
+          : Number(input.earlyCheckInBufferMinutes),
     };
   });
 
@@ -45,10 +50,13 @@ export async function PUT(request: Request) {
     if (
       !isShift(setting.shift) ||
       !isTime(setting.startTime) ||
-      !isTime(setting.endTime)
+      !isTime(setting.endTime) ||
+      !Number.isInteger(setting.earlyCheckInBufferMinutes) ||
+      setting.earlyCheckInBufferMinutes < 0 ||
+      setting.earlyCheckInBufferMinutes > 240
     ) {
       return NextResponse.json(
-        { error: "Shift dan jam harus valid. Format jam: HH:mm." },
+        { error: "Shift, jam, dan buffer harus valid. Buffer 0-240 menit." },
         { status: 400 },
       );
     }
@@ -62,6 +70,7 @@ export async function PUT(request: Request) {
         update: {
           startTime: setting.startTime,
           endTime: setting.endTime,
+          earlyCheckInBufferMinutes: setting.earlyCheckInBufferMinutes,
         },
       }),
     ),
@@ -72,6 +81,7 @@ export async function PUT(request: Request) {
       shift: setting.shift,
       startTime: setting.startTime,
       endTime: setting.endTime,
+      earlyCheckInBufferMinutes: setting.earlyCheckInBufferMinutes,
     })),
   });
 }

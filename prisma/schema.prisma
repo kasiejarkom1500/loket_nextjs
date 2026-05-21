@@ -140,12 +140,13 @@ model Attendance {
 }
 
 model ShiftSetting {
-  id        Int      @id @default(autoincrement())
-  shift     Shift    @unique
-  startTime String   @map("start_time")
-  endTime   String   @map("end_time")
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id                          Int      @id @default(autoincrement())
+  shift                       Shift    @unique
+  startTime                   String   @map("start_time")
+  endTime                     String   @map("end_time")
+  earlyCheckInBufferMinutes   Int      @default(30) @map("early_check_in_buffer_minutes")
+  updatedAt                   DateTime @updatedAt
+  createdAt                   DateTime @default(now())
 }
 
 enum QueueStatus {

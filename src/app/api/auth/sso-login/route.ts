@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signSession } from "@/lib/auth";
-import { getActiveShifts, getCurrentShift, getTodayRange } from "@/lib/time";
+import {
+  getCurrentShift,
+  getLoginEligibleShifts,
+  getTodayRange,
+} from "@/lib/time";
 
 const SESSION_COOKIE = "loket_session";
 const SESSION_SECONDS = 60 * 60 * 8;
@@ -95,14 +99,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Akun bukan admin." }, { status: 403 });
     }
   } else {
-    const activeShifts = await getActiveShifts();
-    const currentShift = activeShifts[0] ?? (await getCurrentShift());
+    const loginEligibleShifts = await getLoginEligibleShifts();
+    const currentShift = loginEligibleShifts[0] ?? (await getCurrentShift());
     const { start, end } = getTodayRange();
-    const assignmentShifts = activeShifts.length ? activeShifts : [currentShift];
     const assignments = await prisma.assignment.findMany({
       where: {
         userId: user.id,
-        shift: { in: assignmentShifts },
         date: { gte: start, lte: end },
       },
       orderBy: { createdAt: "desc" },
@@ -110,7 +112,6 @@ export async function POST(request: Request) {
     const openAttendance = await prisma.attendance.findFirst({
       where: {
         userId: user.id,
-        shift: { in: assignmentShifts },
         date: { gte: start, lte: end },
         checkInAt: { not: null },
         checkOutAt: null,
@@ -125,9 +126,9 @@ export async function POST(request: Request) {
               item.role === openAttendance.role,
           )
         : null) ??
-      assignmentShifts
-        .map((activeShift) =>
-          assignments.find((item) => item.shift === activeShift),
+      loginEligibleShifts
+        .map((eligibleShift) =>
+          assignments.find((item) => item.shift === eligibleShift),
         )
         .find(Boolean);
 

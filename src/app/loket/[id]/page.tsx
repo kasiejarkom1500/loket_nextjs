@@ -439,6 +439,9 @@ export default function LoketPage() {
     });
     setAttendanceLoading(false);
     if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setToast(data.error ?? "Gagal presensi pulang.");
+      setTimeout(() => setToast(null), 3000);
       return;
     }
     await loadAttendance();

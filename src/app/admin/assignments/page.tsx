@@ -133,6 +133,7 @@ type ShiftSetting = {
   shift: "PAGI" | "SIANG";
   startTime: string;
   endTime: string;
+  earlyCheckInBufferMinutes: number;
 };
 type Assignment = {
   id: number;
@@ -183,8 +184,18 @@ export default function AssignmentPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadMonth, setUploadMonth] = useState(() => filterDate.slice(0, 7));
   const [shiftSettings, setShiftSettings] = useState<ShiftSetting[]>([
-    { shift: "PAGI", startTime: "00:00", endTime: "11:59" },
-    { shift: "SIANG", startTime: "12:00", endTime: "23:59" },
+    {
+      shift: "PAGI",
+      startTime: "00:00",
+      endTime: "11:59",
+      earlyCheckInBufferMinutes: 30,
+    },
+    {
+      shift: "SIANG",
+      startTime: "12:00",
+      endTime: "23:59",
+      earlyCheckInBufferMinutes: 30,
+    },
   ]);
   const [shiftSettingsStatus, setShiftSettingsStatus] = useState<string | null>(null);
   const [shiftSettingsSaving, setShiftSettingsSaving] = useState(false);
@@ -278,8 +289,8 @@ export default function AssignmentPage() {
 
   const updateShiftSetting = (
     shift: "PAGI" | "SIANG",
-    field: "startTime" | "endTime",
-    value: string,
+    field: "startTime" | "endTime" | "earlyCheckInBufferMinutes",
+    value: string | number,
   ) => {
     setShiftSettings((prev) =>
       prev.map((setting) =>
@@ -355,7 +366,7 @@ export default function AssignmentPage() {
               Jam ini menentukan shift aktif untuk login, presensi, dan daftar petugas aktif.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[560px]">
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[640px]">
             {shiftSettings.map((setting) => (
               <div key={setting.shift} className="rounded-xl border border-zinc-200 bg-white p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
@@ -391,6 +402,26 @@ export default function AssignmentPage() {
                     />
                   </label>
                 </div>
+                <label className="mt-3 flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                    Buffer Login Awal (menit)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={240}
+                    value={setting.earlyCheckInBufferMinutes}
+                    onChange={(e) =>
+                      updateShiftSetting(
+                        setting.shift,
+                        "earlyCheckInBufferMinutes",
+                        Number(e.target.value),
+                      )
+                    }
+                    className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    required
+                  />
+                </label>
               </div>
             ))}
           </div>

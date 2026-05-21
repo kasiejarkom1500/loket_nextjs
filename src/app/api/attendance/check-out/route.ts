@@ -1,12 +1,30 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/auth";
-import { getCurrentShift, getTodayDate } from "@/lib/time";
+import { getCurrentShift, getShiftSettings, getTodayDate } from "@/lib/time";
+
+const APP_TIMEZONE = "Asia/Jakarta";
 
 const parseIntField = (value: unknown) => {
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseTime = (value: string) => {
+  const [hour, minute] = value.split(":").map(Number);
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+  return { hour, minute };
 };
 
 export async function POST(request: Request) {
@@ -46,6 +64,43 @@ export async function POST(request: Request) {
       { error: "Belum presensi datang." },
       { status: 400 },
     );
+  }
+
+  const shiftSettings = await getShiftSettings();
+  const shiftSetting = shiftSettings.find((item) => item.shift === shift);
+  if (shiftSetting) {
+    const shiftStartTime = parseTime(shiftSetting.startTime);
+    const shiftEndTime = parseTime(shiftSetting.endTime);
+    if (shiftStartTime && shiftEndTime) {
+      const baseDate = DateTime.fromJSDate(attendance.date).setZone(
+        APP_TIMEZONE,
+      );
+      const shiftStart = baseDate.set({
+        hour: shiftStartTime.hour,
+        minute: shiftStartTime.minute,
+        second: 0,
+        millisecond: 0,
+      });
+      let shiftEnd = baseDate.set({
+        hour: shiftEndTime.hour,
+        minute: shiftEndTime.minute,
+        second: 0,
+        millisecond: 0,
+      });
+      if (shiftEnd <= shiftStart) {
+        shiftEnd = shiftEnd.plus({ days: 1 });
+      }
+
+      const now = DateTime.now().setZone(APP_TIMEZONE);
+      if (now < shiftEnd) {
+        return NextResponse.json(
+          {
+            error: `Presensi pulang baru bisa setelah jam ${shiftSetting.endTime}.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   let data: Record<string, unknown> = {

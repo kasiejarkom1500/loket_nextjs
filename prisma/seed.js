@@ -11,8 +11,8 @@ const services = [
 
 const counters = [{ name: "Loket Pelayanan Publik" }, { name: "Loket Permintaan Data" }];
 const shiftSettings = [
-  { shift: "PAGI", startTime: "00:00", endTime: "11:59" },
-  { shift: "SIANG", startTime: "12:00", endTime: "23:59" },
+  { shift: "PAGI", startTime: "00:00", endTime: "11:59", earlyCheckInBufferMinutes: 30 },
+  { shift: "SIANG", startTime: "12:00", endTime: "23:59", earlyCheckInBufferMinutes: 30 },
 ];
 
 async function main() {
@@ -36,7 +36,9 @@ async function main() {
   for (const setting of shiftSettings) {
     await prisma.shiftSetting.upsert({
       where: { shift: setting.shift },
-      update: {},
+      update: {
+        earlyCheckInBufferMinutes: setting.earlyCheckInBufferMinutes,
+      },
       create: setting,
     });
   }

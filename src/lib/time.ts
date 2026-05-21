@@ -3,8 +3,18 @@ import { prisma } from "@/lib/prisma";
 
 const APP_TIMEZONE = "Asia/Jakarta";
 const DEFAULT_SHIFT_SETTINGS = [
-  { shift: "PAGI" as const, startTime: "00:00", endTime: "11:59" },
-  { shift: "SIANG" as const, startTime: "12:00", endTime: "23:59" },
+  {
+    shift: "PAGI" as const,
+    startTime: "00:00",
+    endTime: "11:59",
+    earlyCheckInBufferMinutes: 30,
+  },
+  {
+    shift: "SIANG" as const,
+    startTime: "12:00",
+    endTime: "23:59",
+    earlyCheckInBufferMinutes: 30,
+  },
 ];
 type ShiftValue = (typeof DEFAULT_SHIFT_SETTINGS)[number]["shift"];
 
@@ -35,6 +45,9 @@ const isTimeInRange = (current: number, start: number, end: number) => {
 const minutesSinceShiftStart = (current: number, start: number) =>
   current >= start ? current - start : current + 24 * 60 - start;
 
+const minutesUntilShiftStart = (current: number, start: number) =>
+  start >= current ? start - current : start + 24 * 60 - current;
+
 export const getDefaultShiftSettings = () => DEFAULT_SHIFT_SETTINGS;
 
 export const getShiftSettings = async () => {
@@ -51,6 +64,8 @@ export const getShiftSettings = async () => {
               shift: setting.shift,
               startTime: setting.startTime,
               endTime: setting.endTime,
+              earlyCheckInBufferMinutes:
+                setting.earlyCheckInBufferMinutes,
             }
           : fallback;
       });
@@ -96,6 +111,51 @@ export const getActiveShifts = async (): Promise<ShiftValue[]> => {
 
   return activeSettings
     .sort((a, b) => a.minutesSinceStart - b.minutesSinceStart)
+    .map((setting) => setting.shift);
+};
+
+export const getLoginEligibleShifts = async (): Promise<ShiftValue[]> => {
+  const now = getNowInAppTimezone();
+  const currentMinutes = now.hour * 60 + now.minute;
+  const settings = await getShiftSettings();
+  const eligibleSettings: Array<{
+    shift: ShiftValue;
+    priority: number;
+    minutes: number;
+  }> = [];
+
+  for (const setting of settings) {
+    const start = toMinutes(setting.startTime);
+    const end = toMinutes(setting.endTime);
+    const earlyBufferMinutes = Math.max(
+      0,
+      Number(setting.earlyCheckInBufferMinutes ?? 30),
+    );
+    if (start === null || end === null) {
+      continue;
+    }
+
+    if (isTimeInRange(currentMinutes, start, end)) {
+      eligibleSettings.push({
+        shift: setting.shift,
+        priority: 0,
+        minutes: minutesSinceShiftStart(currentMinutes, start),
+      });
+      continue;
+    }
+
+    const minutesUntilStart = minutesUntilShiftStart(currentMinutes, start);
+    if (minutesUntilStart <= earlyBufferMinutes) {
+      eligibleSettings.push({
+        shift: setting.shift,
+        priority: 1,
+        minutes: minutesUntilStart,
+      });
+    }
+  }
+
+  return eligibleSettings
+    .sort((a, b) => a.priority - b.priority || a.minutes - b.minutes)
     .map((setting) => setting.shift);
 };
 

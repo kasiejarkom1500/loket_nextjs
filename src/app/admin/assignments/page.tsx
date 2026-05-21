@@ -129,6 +129,11 @@ function SearchableUserSelect({
 
 type User = { id: number; nama: string; username: string; nipLama: string; isAdmin: boolean };
 type Counter = { id: number; name: string };
+type ShiftSetting = {
+  shift: "PAGI" | "SIANG";
+  startTime: string;
+  endTime: string;
+};
 type Assignment = {
   id: number;
   role: "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
@@ -177,22 +182,35 @@ export default function AssignmentPage() {
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadMonth, setUploadMonth] = useState(() => filterDate.slice(0, 7));
+  const [shiftSettings, setShiftSettings] = useState<ShiftSetting[]>([
+    { shift: "PAGI", startTime: "00:00", endTime: "11:59" },
+    { shift: "SIANG", startTime: "12:00", endTime: "23:59" },
+  ]);
+  const [shiftSettingsStatus, setShiftSettingsStatus] = useState<string | null>(null);
+  const [shiftSettingsSaving, setShiftSettingsSaving] = useState(false);
 
   const selectedRole = form.role;
 
   useEffect(() => {
     const loadUsers = async () => { const r = await fetch("/api/admin/users"); if (r.ok) { const d = await r.json(); setUsers(d.users ?? []); } };
     const loadCounters = async () => { const r = await fetch("/api/counters"); if (r.ok) { const d = await r.json(); setCounters(d.counters ?? []); } };
-    loadUsers(); loadCounters();
+    const loadShiftSettings = async () => {
+      const r = await fetch("/api/admin/shift-settings");
+      if (r.ok) {
+        const d = await r.json();
+        setShiftSettings(d.settings ?? []);
+      }
+    };
+    loadUsers(); loadCounters(); loadShiftSettings();
   }, []);
 
-  const refreshAssignments = async (date?: string) => {
+  const refreshAssignments = useCallback(async (date?: string) => {
     const d = date ?? filterDate;
     const r = await fetch(`/api/admin/assignments?date=${d}`);
     if (r.ok) { const data = await r.json(); setAssignments(data.assignments ?? []); }
-  };
+  }, [filterDate]);
 
-  useEffect(() => { refreshAssignments(); }, [filterDate]);
+  useEffect(() => { refreshAssignments(); }, [refreshAssignments]);
   useEffect(() => { setPage(1); }, [filterDate]);
   useEffect(() => { setUploadMonth(filterDate.slice(0, 7)); }, [filterDate]);
 
@@ -258,6 +276,38 @@ export default function AssignmentPage() {
     await refreshAssignments();
   };
 
+  const updateShiftSetting = (
+    shift: "PAGI" | "SIANG",
+    field: "startTime" | "endTime",
+    value: string,
+  ) => {
+    setShiftSettings((prev) =>
+      prev.map((setting) =>
+        setting.shift === shift ? { ...setting, [field]: value } : setting,
+      ),
+    );
+  };
+
+  const handleShiftSettingsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setShiftSettingsSaving(true);
+    setShiftSettingsStatus(null);
+    const res = await fetch("/api/admin/shift-settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settings: shiftSettings }),
+    });
+    setShiftSettingsSaving(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setShiftSettingsStatus(d.error ?? "Gagal menyimpan jam shift.");
+      return;
+    }
+    const payload = await res.json();
+    setShiftSettings(payload.settings ?? shiftSettings);
+    setShiftSettingsStatus("Jam shift tersimpan.");
+  };
+
   return (
     <>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -293,6 +343,68 @@ export default function AssignmentPage() {
         {uploadErrors.length ? (
           <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
             {uploadErrors.map((err) => <p key={err}>{err}</p>)}
+          </div>
+        ) : null}
+      </form>
+
+      <form onSubmit={handleShiftSettingsSubmit} className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-zinc-900">Pengaturan Jam Shift</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Jam ini menentukan shift aktif untuk login, presensi, dan daftar petugas aktif.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[560px]">
+            {shiftSettings.map((setting) => (
+              <div key={setting.shift} className="rounded-xl border border-zinc-200 bg-white p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                  {setting.shift === "PAGI" ? "Shift Pagi" : "Shift Siang"}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                      Mulai
+                    </span>
+                    <input
+                      type="time"
+                      value={setting.startTime}
+                      onChange={(e) =>
+                        updateShiftSetting(setting.shift, "startTime", e.target.value)
+                      }
+                      className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                      Selesai
+                    </span>
+                    <input
+                      type="time"
+                      value={setting.endTime}
+                      onChange={(e) =>
+                        updateShiftSetting(setting.shift, "endTime", e.target.value)
+                      }
+                      className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      required
+                    />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="submit"
+            disabled={shiftSettingsSaving}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-xs font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          >
+            {shiftSettingsSaving ? "Menyimpan..." : "Simpan Jam Shift"}
+          </button>
+        </div>
+        {shiftSettingsStatus ? (
+          <div className={`mt-3 rounded-xl px-4 py-2.5 text-xs font-medium ${shiftSettingsStatus.includes("tersimpan") ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+            {shiftSettingsStatus}
           </div>
         ) : null}
       </form>

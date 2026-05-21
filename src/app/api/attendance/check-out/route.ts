@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const shift = getCurrentShift();
+  const shift = await getCurrentShift();
   const date = getTodayDate();
 
   const attendance = await prisma.attendance.findFirst({

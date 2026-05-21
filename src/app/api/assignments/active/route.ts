@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!role) {
     return NextResponse.json({ error: "role is required" }, { status: 400 });
   }
-  const shift = getCurrentShift();
+  const shift = await getCurrentShift();
   const { start, end } = getTodayRange();
 
   const assignments = await prisma.assignment.findMany({

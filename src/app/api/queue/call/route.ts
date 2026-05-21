@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const { start, end } = getTodayRange();
-  const currentShift = getCurrentShift();
+  const currentShift = await getCurrentShift();
 
   const isDataService = (serviceName: string) =>
     serviceName.toLowerCase().includes("permintaan data");

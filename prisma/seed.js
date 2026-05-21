@@ -10,6 +10,10 @@ const services = [
 ];
 
 const counters = [{ name: "Loket Pelayanan Publik" }, { name: "Loket Permintaan Data" }];
+const shiftSettings = [
+  { shift: "PAGI", startTime: "00:00", endTime: "11:59" },
+  { shift: "SIANG", startTime: "12:00", endTime: "23:59" },
+];
 
 async function main() {
   for (const service of services) {
@@ -27,6 +31,14 @@ async function main() {
     if (!existing) {
       await prisma.counter.create({ data: counter });
     }
+  }
+
+  for (const setting of shiftSettings) {
+    await prisma.shiftSetting.upsert({
+      where: { shift: setting.shift },
+      update: {},
+      create: setting,
+    });
   }
 
   const adminHash = await bcrypt.hash("admin123", 10);

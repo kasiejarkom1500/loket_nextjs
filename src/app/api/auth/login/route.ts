@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       );
     }
   } else {
-    const currentShift = getCurrentShift();
+    const currentShift = await getCurrentShift();
     const { start, end } = getTodayRange();
     const assignment = await prisma.assignment.findFirst({
       where: {

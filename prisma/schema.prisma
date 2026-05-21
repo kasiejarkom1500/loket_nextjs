@@ -139,6 +139,15 @@ model Attendance {
   @@unique([userId, date, shift, role])
 }
 
+model ShiftSetting {
+  id        Int      @id @default(autoincrement())
+  shift     Shift    @unique
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
 enum QueueStatus {
   PENDING
   CALLED

@@ -84,10 +84,10 @@ const parseMatrixCode = (raw: string) => {
   const value = raw.trim().toUpperCase();
   if (!value) return null;
 
-  if (value === "K1") return { role: "PERMINTAAN_DATA", shift: "PAGI" as const };
-  if (value === "K2") return { role: "PERMINTAAN_DATA", shift: "SIANG" as const };
-  if (value === "P1") return { role: "LAYANAN_PUBLIK", shift: "PAGI" as const };
-  if (value === "P2") return { role: "LAYANAN_PUBLIK", shift: "SIANG" as const };
+  if (value === "K1") return { role: "PERMINTAAN_DATA" as const, shift: "PAGI" as const };
+  if (value === "K2") return { role: "PERMINTAAN_DATA" as const, shift: "SIANG" as const };
+  if (value === "P1") return { role: "LAYANAN_PUBLIK" as const, shift: "PAGI" as const };
+  if (value === "P2") return { role: "LAYANAN_PUBLIK" as const, shift: "SIANG" as const };
 
   return null;
 };

@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Akun bukan admin." }, { status: 403 });
     }
   } else {
-    const currentShift = getCurrentShift();
+    const currentShift = await getCurrentShift();
     const { start, end } = getTodayRange();
     const assignment = await prisma.assignment.findFirst({
       where: {

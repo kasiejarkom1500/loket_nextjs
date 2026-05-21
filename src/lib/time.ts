@@ -1,11 +1,81 @@
 import { DateTime } from "luxon";
+import { prisma } from "@/lib/prisma";
 
 const APP_TIMEZONE = "Asia/Jakarta";
+const DEFAULT_SHIFT_SETTINGS = [
+  { shift: "PAGI" as const, startTime: "00:00", endTime: "11:59" },
+  { shift: "SIANG" as const, startTime: "12:00", endTime: "23:59" },
+];
 
 export const getNowInAppTimezone = () => DateTime.now().setZone(APP_TIMEZONE);
 
-export const getCurrentShift = () =>
-  getNowInAppTimezone().hour < 12 ? "PAGI" : "SIANG";
+const toMinutes = (time: string) => {
+  const [hour, minute] = time.split(":").map(Number);
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+  return hour * 60 + minute;
+};
+
+const isTimeInRange = (current: number, start: number, end: number) => {
+  if (start <= end) {
+    return current >= start && current <= end;
+  }
+  return current >= start || current <= end;
+};
+
+export const getDefaultShiftSettings = () => DEFAULT_SHIFT_SETTINGS;
+
+export const getShiftSettings = async () => {
+  try {
+    const settings = await prisma.shiftSetting.findMany({
+      orderBy: { shift: "asc" },
+    });
+
+    if (settings.length) {
+      return DEFAULT_SHIFT_SETTINGS.map((fallback) => {
+        const setting = settings.find((item) => item.shift === fallback.shift);
+        return setting
+          ? {
+              shift: setting.shift,
+              startTime: setting.startTime,
+              endTime: setting.endTime,
+            }
+          : fallback;
+      });
+    }
+  } catch {
+    // Keep auth and attendance usable before the new table is pushed to DB.
+  }
+
+  return DEFAULT_SHIFT_SETTINGS;
+};
+
+export const getCurrentShift = async () => {
+  const now = getNowInAppTimezone();
+  const currentMinutes = now.hour * 60 + now.minute;
+  const settings = await getShiftSettings();
+
+  for (const setting of settings) {
+    const start = toMinutes(setting.startTime);
+    const end = toMinutes(setting.endTime);
+    if (start === null || end === null) {
+      continue;
+    }
+    if (isTimeInRange(currentMinutes, start, end)) {
+      return setting.shift;
+    }
+  }
+
+  return now.hour < 12 ? "PAGI" : "SIANG";
+};
 
 export const getTodayRange = () => {
   const now = getNowInAppTimezone();

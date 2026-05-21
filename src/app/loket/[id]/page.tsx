@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { onValue, ref } from "firebase/database";
 import { firebaseClientDb, firebaseClientReady } from "@/lib/firebase-client";
@@ -36,6 +36,58 @@ type RealtimeState = {
   }>;
 };
 
+type AttendanceMeta = {
+  shift: "PAGI" | "SIANG";
+  startTime: string | null;
+  endTime: string | null;
+  lateMinutes: number;
+};
+
+function formatLate(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes} menit`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} jam ${rest} menit` : `${hours} jam`;
+}
+
+function AttendanceBadge({
+  label,
+  done,
+  detail,
+  lateMinutes,
+}: {
+  label: string;
+  done: boolean;
+  detail?: string;
+  lateMinutes?: number;
+}) {
+  const isLate = done && typeof lateMinutes === "number" && lateMinutes > 0;
+  const style = done
+    ? isLate
+      ? "border-amber-200 bg-amber-50 text-amber-800"
+      : "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-zinc-200 bg-zinc-50 text-zinc-500";
+
+  return (
+    <div className={`rounded-2xl border px-4 py-3 ${style}`}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-bold">
+        {done ? "Sudah Presensi" : "Belum Presensi"}
+      </p>
+      {detail ? <p className="mt-1 text-xs font-medium">{detail}</p> : null}
+      {isLate ? (
+        <p className="mt-1 text-xs font-bold">
+          Terlambat {formatLate(lateMinutes)}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function LoketPage() {
   const params = useParams<{ id: string }>();
   const counterId = Number(params.id);
@@ -69,6 +121,9 @@ export default function LoketPage() {
     checkInAt: string | null;
     checkOutAt: string | null;
   } | null>(null);
+  const [attendanceMeta, setAttendanceMeta] = useState<AttendanceMeta | null>(
+    null,
+  );
   const [showDefaults, setShowDefaults] = useState(false);
   const [showOfficerDetail, setShowOfficerDetail] = useState(true);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
@@ -143,17 +198,20 @@ export default function LoketPage() {
     loadServices();
   }, []);
 
-  useEffect(() => {
-    const loadAttendance = async () => {
-      const response = await fetch("/api/attendance/status");
-      if (!response.ok) {
-        return;
-      }
-      const data = await response.json();
-      setAttendance(data.attendance ?? null);
-    };
-    loadAttendance();
+  const loadAttendance = useCallback(async () => {
+    const response = await fetch("/api/attendance/status");
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setAttendance(data.attendance ?? null);
+    setAttendanceMeta(data.meta ?? null);
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAttendance();
+  }, [loadAttendance]);
 
   useEffect(() => {
     const loadOfficers = async () => {
@@ -383,8 +441,7 @@ export default function LoketPage() {
     if (!response.ok) {
       return;
     }
-    const data = await response.json();
-    setAttendance(data.attendance ?? null);
+    await loadAttendance();
     setToast("Presensi datang tersimpan.");
     setTimeout(() => setToast(null), 3000);
   };
@@ -410,8 +467,7 @@ export default function LoketPage() {
     if (!response.ok) {
       return;
     }
-    const data = await response.json();
-    setAttendance(data.attendance ?? null);
+    await loadAttendance();
     setToast("Presensi pulang tersimpan.");
     setTimeout(() => setToast(null), 3000);
   };
@@ -771,17 +827,40 @@ export default function LoketPage() {
 
         {activeTab === "attendance" ? (
           <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-5">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                   Presensi Petugas Layanan Publik
                 </p>
                 <p className="mt-2 text-sm text-zinc-600">
-                  Datang: {attendance?.checkInAt ? "Sudah" : "Belum"} | Pulang:{" "}
-                  {attendance?.checkOutAt ? "Sudah" : "Belum"}
+                  Shift {attendanceMeta?.shift === "SIANG" ? "Siang" : "Pagi"}
+                  {attendanceMeta?.startTime && attendanceMeta?.endTime
+                    ? ` · ${attendanceMeta.startTime}-${attendanceMeta.endTime}`
+                    : ""}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <AttendanceBadge
+                  label="Presensi Datang"
+                  done={Boolean(attendance?.checkInAt)}
+                  detail={
+                    attendanceMeta?.startTime
+                      ? `Mulai shift ${attendanceMeta.startTime}`
+                      : undefined
+                  }
+                  lateMinutes={attendanceMeta?.lateMinutes}
+                />
+                <AttendanceBadge
+                  label="Presensi Pulang"
+                  done={Boolean(attendance?.checkOutAt)}
+                  detail={
+                    attendanceMeta?.endTime
+                      ? `Selesai shift ${attendanceMeta.endTime}`
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="flex flex-wrap gap-3 sm:justify-end">
                 <button
                   type="button"
                   onClick={handleCheckIn}

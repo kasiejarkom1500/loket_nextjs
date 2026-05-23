@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pushRealtimeState } from "@/lib/realtime";
 import { getTodayRange } from "@/lib/time";
+import { sendWhatsAppText } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -74,6 +75,19 @@ export async function POST(request: Request) {
   });
 
   await pushRealtimeState();
+
+  if (process.env.WHATSAPP_NOTIFY_QUEUE_CREATED === "1") {
+    void sendWhatsAppText(
+      visitorPhone,
+      [
+        `Halo ${visitorName}, nomor antrian Anda adalah ${queue.number}.`,
+        `Layanan: ${service.name}.`,
+        "Mohon menunggu hingga nomor Anda dipanggil.",
+      ].join("\n"),
+    ).catch((error) => {
+      console.error("Failed to send WhatsApp queue-created notification", error);
+    });
+  }
 
   return NextResponse.json({ queue });
 }

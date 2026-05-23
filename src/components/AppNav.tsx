@@ -32,6 +32,7 @@ const ADMIN_NAV: NavItem[] = [
 const DATA_OFFICER_NAV: NavItem[] = [
   { href: "/attendance", label: "Presensi", icon: "📅" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
+  { href: "/whatsapp", label: "Chat WA", icon: "WA" },
   { href: "/profile", label: "Akun", icon: "👤" },
 ];
 
@@ -109,6 +110,11 @@ function AppNavInner() {
         href: "/online-requests",
         label: "Permintaan Online",
         icon: "💬",
+      },
+      {
+        href: "/whatsapp",
+        label: "Chat WA",
+        icon: "WA",
       },
       {
         href: "/profile",

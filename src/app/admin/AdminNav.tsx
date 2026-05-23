@@ -12,6 +12,7 @@ const navItems = [
   { href: "/admin/visitors", label: "Pengunjung", icon: "👤" },
   { href: "/admin/rating-recap", label: "Rekap Rating", icon: "⭐" },
   { href: "/admin/attendance-recap", label: "Rekap Presensi", icon: "📊" },
+  { href: "/admin/whatsapp", label: "WhatsApp", icon: "WA" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
   { href: "/profile", label: "Akun", icon: "👤" },
 ];

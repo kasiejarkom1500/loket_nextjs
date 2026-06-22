@@ -155,6 +155,9 @@ export default function OnlineRequestsPage() {
   });
   const [saving, setSaving] = useState(false);
   const isPublicServiceOfficer = profile?.role === "LAYANAN_PUBLIK";
+  const showSkdLinkControl =
+    isPublicServiceOfficer &&
+    form.completionStatus === "Selesai transaksi data";
 
   const load = async () => {
     setLoading(true);
@@ -667,33 +670,37 @@ export default function OnlineRequestsPage() {
                     placeholder="Isi rekomendasi publikasi..."
                   />
 
-                  <label className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                    Apakah sudah dikirimkan link SKD?
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {skdOptions.filter(Boolean).map((opt) => {
-                      const isActive = form.skdLinkSent === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({
-                              ...prev,
-                              skdLinkSent: isActive ? "" : opt,
-                            }))
-                          }
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                            isActive
-                              ? "border-blue-300 bg-blue-50 text-blue-700"
-                              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {showSkdLinkControl ? (
+                    <>
+                      <label className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                        Apakah sudah dikirimkan link SKD?
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {skdOptions.filter(Boolean).map((opt) => {
+                          const isActive = form.skdLinkSent === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  skdLinkSent: isActive ? "" : opt,
+                                }))
+                              }
+                              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                                isActive
+                                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
 
                 {/* Right: Status Penyelesaian */}

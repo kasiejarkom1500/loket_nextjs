@@ -89,7 +89,13 @@ export async function POST(request: Request) {
         role = "LAYANAN_PUBLIK";
         shift = currentShift;
         assignmentId = null;
-        counterId = null;
+        counterId = user.counterId ?? null;
+        if (!counterId) {
+          return NextResponse.json(
+            { error: "Admin belum memiliki loket default di master user." },
+            { status: 400 },
+          );
+        }
       } else {
         return NextResponse.json(
           { error: "Tidak ada penugasan aktif untuk shift ini." },

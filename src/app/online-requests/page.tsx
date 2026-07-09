@@ -68,9 +68,11 @@ function StatusBadge({ status }: { status?: string }) {
 function StatusSelector({
   value,
   onChange,
+  role,
 }: {
   value: string;
   onChange: (v: string) => void;
+  role?: string;
 }) {
   const options = [
     {
@@ -98,6 +100,18 @@ function StatusSelector({
       idle: "border-zinc-200 bg-white hover:border-violet-200 hover:bg-violet-50/40",
     },
   ];
+  const visibleOptions = options.filter((option) => {
+    if (role === "PERMINTAAN_DATA") {
+      return option.value === "Selesai transaksi data";
+    }
+    if (role === "LAYANAN_PUBLIK") {
+      return (
+        option.value === "Selesai SKD" ||
+        option.value === "Selesai pelayanan publik"
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="flex flex-col gap-2">
@@ -105,7 +119,7 @@ function StatusSelector({
         Status Penyelesaian
       </label>
       <div className="grid gap-2">
-        {options.map((opt) => {
+        {visibleOptions.map((opt) => {
           const isActive = value === opt.value;
           return (
             <button
@@ -155,9 +169,7 @@ export default function OnlineRequestsPage() {
   });
   const [saving, setSaving] = useState(false);
   const isPublicServiceOfficer = profile?.role === "LAYANAN_PUBLIK";
-  const showSkdLinkControl =
-    isPublicServiceOfficer &&
-    form.completionStatus === "Selesai transaksi data";
+  const showSkdLinkControl = isPublicServiceOfficer;
 
   const load = async () => {
     setLoading(true);
@@ -440,7 +452,8 @@ export default function OnlineRequestsPage() {
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Instansi</th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Status</th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">SKD</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Petugas</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Petugas Pelayanan Pengaduan</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Petugas Konsultasi</th>
                   <th className="sticky right-0 bg-zinc-50/90 px-4 py-3 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Aksi</th>
                 </tr>
               </thead>
@@ -470,9 +483,10 @@ export default function OnlineRequestsPage() {
                         {item.skdLinkSent || "-"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-xs text-zinc-500">
-                        {item.petugasPelayananPengaduan ||
-                          item.petugasKonsultasi ||
-                          "-"}
+                        {item.petugasPelayananPengaduan || "-"}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-xs text-zinc-500">
+                        {item.petugasKonsultasi || "-"}
                       </td>
                       <td className="sticky right-0 bg-white px-4 py-3.5 text-right group-hover:bg-blue-50/40">
                         <button
@@ -707,6 +721,7 @@ export default function OnlineRequestsPage() {
                 <div className="flex flex-col gap-4">
                   <StatusSelector
                     value={form.completionStatus}
+                    role={profile?.role}
                     onChange={(v) =>
                       setForm((prev) => ({ ...prev, completionStatus: v }))
                     }

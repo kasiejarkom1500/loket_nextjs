@@ -71,6 +71,14 @@ export async function POST(request: Request) {
     headerIndex.set(normalizeHeader(String(header)), index);
   });
 
+  const formatNow = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(
+      d.getHours(),
+    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
   const requiredHeaders: Record<string, string> = {
     PUBLIKASI: "PUBLIKASI YANG DISARANKAN",
     SKD: "Apakah sudah dikirimkan link SKD ?",
@@ -120,6 +128,21 @@ export async function POST(request: Request) {
     ? toColumnLetter(headerIndex.get(normalizeHeader("Keterangan")) as number)
     : null;
 
+  const completionTimeCol = headerIndex.has(normalizeHeader("Waktu Penyelesaian"))
+    ? toColumnLetter(
+        headerIndex.get(normalizeHeader("Waktu Penyelesaian")) as number,
+      )
+    : null;
+  const publicCompletionTimeCol = headerIndex.has(
+    normalizeHeader("Waktu Penyelesaian Layanan Publik"),
+  )
+    ? toColumnLetter(
+        headerIndex.get(
+          normalizeHeader("Waktu Penyelesaian Layanan Publik"),
+        ) as number,
+      )
+    : null;
+
   updates.push({
     rangeA1: `${quotedSheetName}!${publishCol}${rowNumber}`,
     value: publikasi,
@@ -138,6 +161,23 @@ export async function POST(request: Request) {
       rangeA1: `${quotedSheetName}!${completionCol}${rowNumber}`,
       value: completionStatus,
     });
+    if (completionStatus) {
+      if (completionTimeCol && session.role === "PERMINTAAN_DATA") {
+        updates.push({
+          rangeA1: `${quotedSheetName}!${completionTimeCol}${rowNumber}`,
+          value: formatNow(),
+        });
+      }
+      if (
+        publicCompletionTimeCol &&
+        session.role === "LAYANAN_PUBLIK"
+      ) {
+        updates.push({
+          rangeA1: `${quotedSheetName}!${publicCompletionTimeCol}${rowNumber}`,
+          value: formatNow(),
+        });
+      }
+    }
   } else if (keteranganCol) {
     const prefix = completionStatus ? `Status: ${completionStatus}` : "";
     updates.push({

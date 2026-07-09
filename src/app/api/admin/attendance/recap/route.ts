@@ -32,7 +32,6 @@ const formatDateInput = (date: Date) => {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const month = url.searchParams.get("month");
-  const role = normalizeRole(url.searchParams.get("role"));
   const range = parseMonthRange(month);
 
   if (!range) {
@@ -42,19 +41,52 @@ export async function GET(request: Request) {
     );
   }
 
-  const attendances = await prisma.attendance.findMany({
-    where: {
-      role,
-      date: { gte: range.start, lte: range.end },
-    },
-    include: { user: true },
-    orderBy: [{ date: "desc" }, { shift: "asc" }],
-  });
+  const [attendances, shiftSettings, assignments] = await Promise.all([
+    prisma.attendance.findMany({
+      where: {
+        date: { gte: range.start, lte: range.end },
+      },
+      include: { user: true },
+      orderBy: [{ date: "asc" }, { shift: "asc" }],
+    }),
+    prisma.shiftSetting.findMany(),
+    prisma.assignment.findMany({
+      where: { date: { gte: range.start, lte: range.end } },
+      include: { user: true },
+      orderBy: [{ date: "asc" }],
+    }),
+  ]);
+
+  const shiftSettingsMap = new Map(
+    shiftSettings.map((s) => [
+      s.shift,
+      {
+        startTime: s.startTime,
+        earlyCheckInBufferMinutes: s.earlyCheckInBufferMinutes,
+      },
+    ]),
+  );
+
+  const assignmentsMapped = assignments.map((a) => ({
+    id: a.id,
+    userId: a.userId,
+    role: a.role,
+    date: formatDateInput(a.date),
+    user: a.user
+      ? {
+          id: a.user.id,
+          nama: a.user.nama,
+          nipLama: a.user.nipLama,
+          username: a.user.username,
+        }
+      : null,
+  }));
 
   const items = attendances.map((attendance) => ({
     id: attendance.id,
     date: formatDateInput(attendance.date),
     shift: attendance.shift,
+    role: attendance.role,
     user: {
       id: attendance.user.id,
       nama: attendance.user.nama,
@@ -63,6 +95,9 @@ export async function GET(request: Request) {
     },
     checkInAt: attendance.checkInAt?.toISOString() ?? null,
     checkOutAt: attendance.checkOutAt?.toISOString() ?? null,
+    shiftStartTime: shiftSettingsMap.get(attendance.shift)?.startTime ?? null,
+    shiftEarlyCheckInBufferMinutes:
+      shiftSettingsMap.get(attendance.shift)?.earlyCheckInBufferMinutes ?? 0,
     publicNondataOffline: attendance.publicNondataOffline ?? null,
     publicNondataOnline: attendance.publicNondataOnline ?? null,
     publicComplaintsOffline: attendance.publicComplaintsOffline ?? null,
@@ -75,5 +110,5 @@ export async function GET(request: Request) {
     dataNotes: attendance.dataNotes ?? null,
   }));
 
-  return NextResponse.json({ role, items });
+  return NextResponse.json({ items, assignments: assignmentsMapped, shiftSettings: Object.fromEntries(shiftSettingsMap) });
 }

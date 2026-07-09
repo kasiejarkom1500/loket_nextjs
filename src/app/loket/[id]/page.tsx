@@ -138,6 +138,11 @@ export default function LoketPage() {
   const [staffNote, setStaffNote] = useState("");
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") === "attendance" ? "attendance" : "queue") as "queue" | "attendance";
+  const isStaffNoteValid = useMemo(() => {
+    const trimmedNote = staffNote.trim();
+    const wordCount = trimmedNote.split(/\s+/).filter(Boolean).length;
+    return Boolean(trimmedNote) && wordCount >= 3 && !/^-+$/.test(trimmedNote);
+  }, [staffNote]);
   const currentQueue = useMemo(
     () => (state?.counters ? state.counters[String(counterId)] : null),
     [state, counterId],
@@ -395,14 +400,23 @@ export default function LoketPage() {
     if (!currentQueue) {
       return;
     }
+    const trimmedNote = staffNote.trim();
+    const wordCount = trimmedNote.split(/\s+/).filter(Boolean).length;
+    if (!trimmedNote || wordCount < 3 || /^-+$/.test(trimmedNote)) {
+      setToast("Detail keperluan wajib diisi minimal 3 kata dan tidak boleh hanya '-' .");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    setLoading(true);
     const response = await fetch("/api/queue/update-staff-purpose", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         queueId: currentQueue.queueId,
-        staffPurposeDetail: staffNote,
+        staffPurposeDetail: trimmedNote,
       }),
     });
+    setLoading(false);
     if (!response.ok) {
       return;
     }
@@ -504,9 +518,29 @@ export default function LoketPage() {
               <p className="mt-4 text-4xl font-semibold text-zinc-900">
                 {currentQueue.number}
               </p>
-              <p className="mt-2 text-sm text-zinc-600">
-                {currentQueue.serviceName}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <p className="text-sm text-zinc-600">{currentQueue.serviceName}</p>
+                <select
+                  value={
+                    services.find(
+                      (service) => service.name === currentQueue.serviceName,
+                    )?.id ?? ""
+                  }
+                  onChange={(event) =>
+                    handleChangeService(
+                      currentQueue.queueId,
+                      Number(event.target.value),
+                    )
+                  }
+                  className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-700"
+                >
+                  {services.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -596,7 +630,8 @@ export default function LoketPage() {
                 <button
                   type="button"
                   onClick={handleSaveStaffNote}
-                  className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-xs font-semibold text-white transition hover:bg-zinc-800"
+                  disabled={!isStaffNoteValid || loading}
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
                 >
                   Simpan Detail
                 </button>

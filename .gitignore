@@ -39,6 +39,9 @@ firebase/*.json
 # google service accounts
 google/*.json
 
+# whatsapp linked-device sessions
+.baileys_auth/
+
 # vercel
 .vercel
 

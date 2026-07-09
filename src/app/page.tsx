@@ -149,6 +149,14 @@ const PUBLIC_OFFICER_MENU: MenuItem[] = [
     color: "from-blue-500 to-indigo-600",
     accent: "bg-blue-50 border-blue-200 hover:border-blue-300",
   },
+  {
+    icon: "WA",
+    title: "Chat WhatsApp",
+    desc: "Baca dan balas pesan WhatsApp masyarakat dari website.",
+    href: "/whatsapp",
+    color: "from-emerald-500 to-green-600",
+    accent: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
+  },
 ];
 
 const DATA_OFFICER_MENU: MenuItem[] = [
@@ -167,6 +175,14 @@ const DATA_OFFICER_MENU: MenuItem[] = [
     href: "/online-requests",
     color: "from-blue-500 to-indigo-600",
     accent: "bg-blue-50 border-blue-200 hover:border-blue-300",
+  },
+  {
+    icon: "WA",
+    title: "Chat WhatsApp",
+    desc: "Baca dan balas pesan WhatsApp masyarakat dari website.",
+    href: "/whatsapp",
+    color: "from-emerald-500 to-green-600",
+    accent: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
   },
 ];
 

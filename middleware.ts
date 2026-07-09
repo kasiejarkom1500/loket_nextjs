@@ -71,6 +71,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/whatsapp") || pathname.startsWith("/api/whatsapp")) {
+    const session = await getSession(request);
+    if (!session) {
+      if (pathname.startsWith("/api/whatsapp")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if (pathname.startsWith("/profile")) {
     const session = await getSession(request);
     if (!session) {
@@ -102,6 +114,8 @@ export const config = {
     "/attendance",
     "/online-requests/:path*",
     "/api/sheets/:path*",
+    "/whatsapp/:path*",
+    "/api/whatsapp/:path*",
     "/profile/:path*",
     "/admin/:path*",
     "/api/admin/:path*",

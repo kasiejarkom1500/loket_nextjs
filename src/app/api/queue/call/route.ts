@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { pushRealtimeState } from "@/lib/realtime";
 import { verifySession } from "@/lib/auth";
 import { getCurrentShift, getTodayRange } from "@/lib/time";
+import { sendWhatsAppText } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -117,10 +118,25 @@ export async function POST(request: Request) {
       securityOfficerId,
       calledAt: new Date(),
     },
-    include: { service: true, counter: true },
+    include: { service: true, counter: true, visitor: true },
   });
 
   await pushRealtimeState();
+
+  if (
+    process.env.WHATSAPP_NOTIFY_QUEUE_CALLED === "1" &&
+    updatedQueue.visitor?.phone
+  ) {
+    void sendWhatsAppText(
+      updatedQueue.visitor.phone,
+      [
+        `Nomor antrian ${updatedQueue.number} sudah dipanggil.`,
+        `Silakan menuju ${updatedQueue.counter?.name ?? `Loket ${counterId}`}.`,
+      ].join("\n"),
+    ).catch((error) => {
+      console.error("Failed to send WhatsApp queue-called notification", error);
+    });
+  }
 
   return NextResponse.json({ queue: updatedQueue });
 }

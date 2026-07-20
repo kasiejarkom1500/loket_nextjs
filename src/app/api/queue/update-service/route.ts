@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     where: { id: queueId },
   });
 
-  if (!queue || queue.status !== "PENDING") {
+  if (!queue || !["PENDING", "CALLED"].includes(queue.status)) {
     return NextResponse.json(
-      { error: "Queue not found or not pending" },
+      { error: "Queue not found or status is not eligible for service update" },
       { status: 400 },
     );
   }

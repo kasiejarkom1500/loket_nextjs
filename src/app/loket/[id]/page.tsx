@@ -389,6 +389,9 @@ export default function LoketPage() {
     });
     setLoading(false);
     if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setToast(data.error ?? "Gagal mengubah jenis antrian.");
+      setTimeout(() => setToast(null), 3000);
       return;
     }
     if (!firebaseClientReady) {

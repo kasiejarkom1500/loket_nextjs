@@ -409,7 +409,7 @@ export default function LoketPage() {
     const selectedDataOfficerId = getSelectedDataOfficerId(queueId);
 
     if (isSelectedServiceData && !selectedDataOfficerId) {
-      setToast("Petugas permintaan data wajib dipilih sebelum mengubah jenis layanan.");
+      setToast("Jika mengubah ke permintaan data. Petugas default wajib dipilih sebelum mengubah jenis layanan.");
       setTimeout(() => setToast(null), 3000);
       return;
     }

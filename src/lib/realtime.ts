@@ -114,6 +114,7 @@ export async function buildRealtimeState(): Promise<RealtimeState> {
       staffPurposeDetail: queue.staffPurposeDetail ?? "",
       publicOfficerName: queue.publicOfficer?.nama ?? "-",
       dataOfficerName: queue.dataOfficer?.nama ?? "-",
+      dataOfficerId: queue.dataOfficerId ?? null,
       securityOfficerName: queue.securityOfficer?.name ?? "-",
     });
   }

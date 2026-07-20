@@ -6,6 +6,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const queueId = Number(body?.queueId);
   const serviceId = Number(body?.serviceId);
+  const dataOfficerId = body?.dataOfficerId ? Number(body.dataOfficerId) : null;
 
   if (!queueId || !serviceId) {
     return NextResponse.json(
@@ -33,9 +34,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
+  const isDataService = service.name.toLowerCase().includes("permintaan data");
+
+  if (isDataService && !dataOfficerId) {
+    return NextResponse.json(
+      { error: "Petugas permintaan data wajib dipilih untuk layanan ini." },
+      { status: 400 },
+    );
+  }
+
   const updated = await prisma.queue.update({
     where: { id: queueId },
-    data: { serviceId },
+    data: {
+      serviceId,
+      dataOfficerId: isDataService ? dataOfficerId : null,
+    },
   });
 
   await pushRealtimeState();

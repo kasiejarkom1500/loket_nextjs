@@ -18,6 +18,7 @@ type CounterState = {
   staffPurposeDetail: string;
   publicOfficerName: string;
   dataOfficerName: string;
+  dataOfficerId: number | null;
   securityOfficerName: string;
 };
 
@@ -117,6 +118,9 @@ export default function LoketPage() {
   const [selectedSecurityOfficer, setSelectedSecurityOfficer] = useState<
     Record<number, string>
   >({});
+  const [pendingServiceUpdate, setPendingServiceUpdate] = useState<
+    { queueId: number; serviceId: number } | null
+  >(null);
   const [attendance, setAttendance] = useState<{
     checkInAt: string | null;
     checkOutAt: string | null;
@@ -259,7 +263,21 @@ export default function LoketPage() {
       return;
     }
     setStaffNote(currentQueue.staffPurposeDetail || "");
-  }, [currentQueue?.queueId, currentQueue?.staffPurposeDetail]);
+    if (
+      currentQueue.dataOfficerId &&
+      !selectedDataOfficer[currentQueue.queueId]
+    ) {
+      setSelectedDataOfficer((prev) => ({
+        ...prev,
+        [currentQueue.queueId]: String(currentQueue.dataOfficerId),
+      }));
+    }
+  }, [
+    currentQueue?.queueId,
+    currentQueue?.staffPurposeDetail,
+    currentQueue?.dataOfficerId,
+    currentQueue,
+  ]);
 
   const refreshState = async () => {
     const response = await fetch("/api/queue/current");
@@ -380,12 +398,33 @@ export default function LoketPage() {
     }
   };
 
+  const getSelectedDataOfficerId = (queueId: number) =>
+    selectedDataOfficer[queueId] || defaultDataOfficerId;
+
   const handleChangeService = async (queueId: number, serviceId: number) => {
+    const selectedService = services.find((service) => service.id === serviceId);
+    const isSelectedServiceData = selectedService
+      ? isDataService(selectedService.name)
+      : false;
+    const selectedDataOfficerId = getSelectedDataOfficerId(queueId);
+
+    if (isSelectedServiceData && !selectedDataOfficerId) {
+      setToast("Petugas permintaan data wajib dipilih sebelum mengubah jenis layanan.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
     setLoading(true);
     const response = await fetch("/api/queue/update-service", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId, serviceId }),
+      body: JSON.stringify({
+        queueId,
+        serviceId,
+        dataOfficerId: isSelectedServiceData
+          ? Number(selectedDataOfficerId)
+          : null,
+      }),
     });
     setLoading(false);
     if (!response.ok) {
@@ -394,9 +433,35 @@ export default function LoketPage() {
       setTimeout(() => setToast(null), 3000);
       return;
     }
+    setPendingServiceUpdate((prev) =>
+      prev?.queueId === queueId ? null : prev,
+    );
     if (!firebaseClientReady) {
       await refreshState();
     }
+  };
+
+  const handleSelectService = (queueId: number, serviceId: number) => {
+    const selectedService = services.find((service) => service.id === serviceId);
+    const isSelectedServiceData = selectedService
+      ? isDataService(selectedService.name)
+      : false;
+
+    if (isSelectedServiceData && !getSelectedDataOfficerId(queueId)) {
+      setPendingServiceUpdate({ queueId, serviceId });
+      setToast("Pilih petugas permintaan data terlebih dahulu, lalu simpan layanan.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    handleChangeService(queueId, serviceId);
+  };
+
+  const handleApplyPendingServiceUpdate = async (queueId: number) => {
+    if (!pendingServiceUpdate || pendingServiceUpdate.queueId !== queueId) {
+      return;
+    }
+    await handleChangeService(queueId, pendingServiceUpdate.serviceId);
   };
 
   const handleSaveStaffNote = async () => {
@@ -530,7 +595,7 @@ export default function LoketPage() {
                     )?.id ?? ""
                   }
                   onChange={(event) =>
-                    handleChangeService(
+                    handleSelectService(
                       currentQueue.queueId,
                       Number(event.target.value),
                     )
@@ -571,9 +636,34 @@ export default function LoketPage() {
                       <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
                         Petugas Permintaan Data
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">
-                        {currentQueue.dataOfficerName}
-                      </p>
+                      {isDataService(currentQueue.serviceName) ? (
+                        <select
+                          value={
+                            selectedDataOfficer[currentQueue.queueId] ||
+                            currentQueue.dataOfficerId?.toString() ||
+                            defaultDataOfficerId ||
+                            ""
+                          }
+                          onChange={(event) =>
+                            setSelectedDataOfficer((prev) => ({
+                              ...prev,
+                              [currentQueue.queueId]: event.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                        >
+                          <option value="">Pilih Petugas Data</option>
+                          {dataOfficers.map((officer) => (
+                            <option key={officer.id} value={officer.id}>
+                              {officer.nama}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="mt-2 text-sm font-semibold text-zinc-900">
+                          {currentQueue.dataOfficerName}
+                        </p>
+                      )}
                     </div>
                     <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">

@@ -79,11 +79,11 @@ function AttendanceBadge({
         {done ? "Sudah Presensi" : "Belum Presensi"}
       </p>
       {detail ? <p className="mt-1 text-xs font-medium">{detail}</p> : null}
-      {isLate ? (
+      {/* {isLate ? (
         <p className="mt-1 text-xs font-bold">
           Terlambat {formatLate(lateMinutes)}
         </p>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }

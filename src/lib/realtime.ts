@@ -24,6 +24,7 @@ type CounterState = {
   staffPurposeDetail: string;
   publicOfficerName: string;
   dataOfficerName: string;
+  dataOfficerId: number | null;
   securityOfficerName: string;
 };
 

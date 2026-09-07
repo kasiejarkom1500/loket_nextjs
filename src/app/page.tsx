@@ -338,11 +338,11 @@ export default function HomePage() {
               BPS Provinsi Jambi
             </p>
             <h1 className="mt-3 text-3xl font-bold text-zinc-900 sm:text-4xl">
-              Sistem Antrian Layanan
+              PST-One
             </h1>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-500">
-              Platform antrian resmi untuk pengambilan nomor, tampilan panggilan
-              loket, dan penilaian layanan pengunjung.
+              Integrasi pengelolaan layanan BPS Provinsi Jambi
+              (Sistem Antrian, kelola layanan kunjungan langsung dan chat whatsapp, dan penilaian pengunjung)
             </p>
           </header>
 

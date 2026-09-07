@@ -98,7 +98,7 @@ model Rating {
   publicOfficerScore Int?
   dataOfficerScore Int?
   securityOfficerScore Int?
-  comment   String?
+  comment   String? @db.VarChar(500)
   createdAt DateTime @default(now())
 
   queue Queue @relation(fields: [queueId], references: [id])

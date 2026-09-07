@@ -93,6 +93,11 @@ export default function WhatsAppAdminPage() {
     await loadStatus();
   };
 
+  const handleRestart = async () => {
+    setLoading(true);
+    await handleLogout(true);
+  };
+
   return (
     <main className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="rounded-2xl border border-white/70 bg-white/90 p-6 shadow-sm">
@@ -136,6 +141,16 @@ export default function WhatsAppAdminPage() {
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
                   Nomor: {status.phone ?? "-"}
+                </p>
+              </div>
+            ) : status?.status === "connecting" ? (
+              <div className="text-center">
+                <p className="text-sm font-semibold text-amber-700">
+                  WhatsApp sedang menghubungkan sesi.
+                </p>
+                <p className="mt-1 text-xs text-amber-600">
+                  QR belum muncul. Jika tetap di tahap ini, reset sesi lalu
+                  buka halaman ini lagi.
                 </p>
               </div>
             ) : (
@@ -205,6 +220,13 @@ export default function WhatsAppAdminPage() {
                 className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 shadow-sm hover:bg-rose-100"
               >
                 Hapus Sesi
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRestart()}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 shadow-sm hover:bg-amber-100"
+              >
+                Restart Sesi
               </button>
             </div>
           </div>

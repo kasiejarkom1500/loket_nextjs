@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppNav from "@/components/AppNav";
 
 type OnlineRequest = {
@@ -21,6 +21,7 @@ type OnlineRequest = {
 };
 
 const skdOptions = ["", "Telah dikirim", "Belum dikirim", "Tidak dikirim"] as const;
+const ONLINE_REQUESTS_START_DATE = "2026-07-01";
 
 /* ── Status badge config ── */
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -171,11 +172,13 @@ export default function OnlineRequestsPage() {
   const isPublicServiceOfficer = profile?.role === "LAYANAN_PUBLIK";
   const showSkdLinkControl = isPublicServiceOfficer;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setStatus(null);
     const response = await fetch(
-      `/api/sheets/online-requests?limit=150&pending=${pendingOnly ? "1" : "0"}`,
+      `/api/sheets/online-requests?limit=150&pending=${
+        pendingOnly ? "1" : "0"
+      }&from=${ONLINE_REQUESTS_START_DATE}`,
     );
     setLoading(false);
     if (!response.ok) {
@@ -189,11 +192,12 @@ export default function OnlineRequestsPage() {
     }
     const data = await response.json();
     setItems(data.items ?? []);
-  };
+  }, [pendingOnly]);
 
   useEffect(() => {
-    load();
-  }, [pendingOnly]);
+    const initialLoad = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [load]);
 
   // Auto-refresh list (helps avoid manual refresh after new Google Form submissions)
   useEffect(() => {
@@ -208,7 +212,7 @@ export default function OnlineRequestsPage() {
       load();
     }, POLL_MS);
     return () => window.clearInterval(id);
-  }, [POLL_MS, selected, saving, pendingOnly]);
+  }, [POLL_MS, selected, saving, load]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -253,7 +257,10 @@ export default function OnlineRequestsPage() {
   }, [items, query, statusFilter]);
 
   // Reset page when filter changes
-  useEffect(() => { setPage(1); }, [query, pendingOnly, statusFilter]);
+  useEffect(() => {
+    const resetPage = window.setTimeout(() => setPage(1), 0);
+    return () => window.clearTimeout(resetPage);
+  }, [query, pendingOnly, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginatedItems = useMemo(

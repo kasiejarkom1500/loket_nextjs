@@ -1,5 +1,6 @@
 import makeWASocket, {
   DisconnectReason,
+  fetchLatestBaileysVersion,
   useMultiFileAuthState as createMultiFileAuthState,
   type WASocket,
 } from "@whiskeysockets/baileys";
@@ -32,7 +33,7 @@ export type WhatsAppStatus = {
   messages: WhatsAppMessage[];
 };
 
-const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL ?? "silent" });
+const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL ?? "info" });
 
 function getAuthDir() {
   return path.resolve(process.cwd(), process.env.WHATSAPP_AUTH_DIR ?? ".baileys_auth");
@@ -95,9 +96,15 @@ class WhatsAppManager {
       return;
     }
 
-    this.starting = this.start().finally(() => {
-      this.starting = null;
-    });
+    this.starting = this.start()
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ error: message }, "WhatsApp socket startup failed");
+        throw error;
+      })
+      .finally(() => {
+        this.starting = null;
+      });
     await this.starting;
   }
 
@@ -144,11 +151,27 @@ class WhatsAppManager {
     this.status = "connecting";
     this.lastError = null;
     this.touch();
+    logger.info({ authDir: getAuthDir() }, "Starting WhatsApp socket");
+
+    const latestVersion = await fetchLatestBaileysVersion();
+    logger.info(
+      {
+        version: latestVersion.version,
+        isLatest: latestVersion.isLatest,
+        error: latestVersion.error
+          ? latestVersion.error instanceof Error
+            ? latestVersion.error.message
+            : String(latestVersion.error)
+          : null,
+      },
+      "Resolved WhatsApp Web version",
+    );
 
     const { state, saveCreds } = await createMultiFileAuthState(getAuthDir());
     const socket = makeWASocket({
       auth: state,
       logger,
+      version: latestVersion.version,
       markOnlineOnConnect: process.env.WHATSAPP_MARK_ONLINE === "1",
       printQRInTerminal: false,
     });
@@ -158,10 +181,20 @@ class WhatsAppManager {
     socket.ev.on("creds.update", saveCreds);
 
     socket.ev.on("connection.update", async (update) => {
+      logger.info(
+        {
+          connection: update.connection ?? null,
+          hasQr: Boolean(update.qr),
+          hasLastDisconnect: Boolean(update.lastDisconnect),
+        },
+        "WhatsApp connection update",
+      );
+
       if (update.qr) {
         this.qr = update.qr;
         this.status = "qr";
         this.touch();
+        logger.info("WhatsApp QR received");
       }
 
       if (update.connection === "open") {
@@ -170,6 +203,7 @@ class WhatsAppManager {
         this.phone = socket.user?.id?.split(":")[0] ?? socket.user?.id ?? null;
         this.lastError = null;
         this.touch();
+        logger.info({ phone: this.phone }, "WhatsApp connected");
       }
 
       if (update.connection === "close") {
@@ -184,12 +218,25 @@ class WhatsAppManager {
         this.qr = null;
         this.lastError = update.lastDisconnect?.error?.message ?? null;
         this.touch();
+        logger.warn(
+          {
+            statusCode,
+            loggedOut,
+            error: this.lastError,
+          },
+          "WhatsApp connection closed",
+        );
 
         if (!loggedOut) {
+          logger.info("Scheduling WhatsApp reconnect in 3 seconds");
           setTimeout(() => {
             void this.ensureStarted().catch((error) => {
               this.lastError = error instanceof Error ? error.message : String(error);
               this.touch();
+              logger.error(
+                { error: this.lastError },
+                "WhatsApp reconnect failed",
+              );
             });
           }, 3000);
         }

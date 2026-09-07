@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   const quotedSheetName = `'${sheetName.replace(/'/g, "''")}'`;
-  const values = await getSheetValues(`${quotedSheetName}!A1:Z1`);
+  const values = await getSheetValues(`${quotedSheetName}!A1:ZZ1`);
   const headers = values[0] ?? [];
   const headerIndex = new Map<string, number>();
   headers.forEach((header, index) => {
@@ -121,6 +121,8 @@ export async function POST(request: Request) {
   const completionHeader = completionHeaderCandidates.find((candidate) =>
     headerIndex.has(normalizeHeader(candidate)),
   );
+  const findHeader = (candidates: string[]) =>
+    candidates.find((candidate) => headerIndex.has(normalizeHeader(candidate)));
   const completionCol = completionHeader
     ? toColumnLetter(headerIndex.get(normalizeHeader(completionHeader)) as number)
     : null;
@@ -128,18 +130,21 @@ export async function POST(request: Request) {
     ? toColumnLetter(headerIndex.get(normalizeHeader("Keterangan")) as number)
     : null;
 
-  const completionTimeCol = headerIndex.has(normalizeHeader("Waktu Penyelesaian"))
-    ? toColumnLetter(
-        headerIndex.get(normalizeHeader("Waktu Penyelesaian")) as number,
-      )
+  const completionTimeHeader = findHeader([
+    "Waktu Penyelesaian",
+    "Waktu Penyelesaian Permintaan Data",
+    "Waktu Penyelesaian Data",
+  ]);
+  const completionTimeCol = completionTimeHeader
+    ? toColumnLetter(headerIndex.get(normalizeHeader(completionTimeHeader)) as number)
     : null;
-  const publicCompletionTimeCol = headerIndex.has(
-    normalizeHeader("Waktu Penyelesaian Layanan Publik"),
-  )
+  const publicCompletionTimeHeader = findHeader([
+    "Waktu Penyelesaian Layanan Publik",
+    "Waktu Penyelesaian Pelayanan Publik",
+  ]);
+  const publicCompletionTimeCol = publicCompletionTimeHeader
     ? toColumnLetter(
-        headerIndex.get(
-          normalizeHeader("Waktu Penyelesaian Layanan Publik"),
-        ) as number,
+        headerIndex.get(normalizeHeader(publicCompletionTimeHeader)) as number,
       )
     : null;
 
@@ -162,7 +167,10 @@ export async function POST(request: Request) {
       value: completionStatus,
     });
     if (completionStatus) {
-      if (completionTimeCol && session.role === "PERMINTAAN_DATA") {
+      if (
+        completionTimeCol &&
+        completionStatus === "Selesai transaksi data"
+      ) {
         updates.push({
           rangeA1: `${quotedSheetName}!${completionTimeCol}${rowNumber}`,
           value: formatNow(),
@@ -170,7 +178,8 @@ export async function POST(request: Request) {
       }
       if (
         publicCompletionTimeCol &&
-        session.role === "LAYANAN_PUBLIK"
+        (completionStatus === "Selesai SKD" ||
+          completionStatus === "Selesai pelayanan publik")
       ) {
         updates.push({
           rangeA1: `${quotedSheetName}!${publicCompletionTimeCol}${rowNumber}`,

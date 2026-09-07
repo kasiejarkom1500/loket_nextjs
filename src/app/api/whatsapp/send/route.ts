@@ -1,22 +1,47 @@
 import { NextResponse } from "next/server";
-import { sendWhatsAppText } from "@/lib/whatsapp";
+import { sendWhatsAppImage, sendWhatsAppText } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({}));
-  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
-  const message = typeof body?.message === "string" ? body.message.trim() : "";
+  const contentType = request.headers.get("content-type") ?? "";
+  let phone = "";
+  let message = "";
+  let imageFile: File | null = null;
 
-  if (!phone || !message) {
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    phone = String(formData.get("phone") ?? "").trim();
+    message = String(formData.get("message") ?? "").trim();
+    const image = formData.get("image");
+    if (image instanceof File && image.size > 0) {
+      imageFile = image;
+    }
+  } else {
+    const body = await request.json().catch(() => ({}));
+    phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    message = typeof body?.message === "string" ? body.message.trim() : "";
+  }
+
+  if (!phone || (!message && !imageFile)) {
     return NextResponse.json(
-      { error: "phone dan message wajib diisi" },
+      { error: "phone wajib diisi dan pesan atau gambar harus ada" },
       { status: 400 },
     );
   }
 
   try {
-    await sendWhatsAppText(phone, message);
+    if (imageFile) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      await sendWhatsAppImage(phone, {
+        buffer,
+        mimeType: imageFile.type || null,
+        fileName: imageFile.name || null,
+        caption: message || null,
+      });
+    } else {
+      await sendWhatsAppText(phone, message);
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

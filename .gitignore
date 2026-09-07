@@ -42,6 +42,9 @@ google/*.json
 # whatsapp linked-device sessions
 .baileys_auth/
 
+# whatsapp media cache
+/public/whatsapp-media/
+
 # vercel
 .vercel
 

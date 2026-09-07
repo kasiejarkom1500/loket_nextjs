@@ -15,6 +15,10 @@ type WhatsAppStatus = {
     text: string;
     timestamp: string;
     direction: "in" | "out";
+    kind: "text" | "image";
+    mediaUrl: string | null;
+    mimeType: string | null;
+    fileName: string | null;
   }[];
 };
 
@@ -35,6 +39,7 @@ export default function WhatsAppAdminPage() {
   const [loading, setLoading] = useState(true);
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [sendState, setSendState] = useState<string | null>(null);
 
   const loadStatus = async () => {
@@ -70,10 +75,17 @@ export default function WhatsAppAdminPage() {
 
   const handleSend = async () => {
     setSendState(null);
+    const hasImage = Boolean(imageFile);
+    const body = hasImage ? new FormData() : null;
+    if (body) {
+      body.append("phone", phone);
+      body.append("message", message);
+      body.append("image", imageFile as File);
+    }
     const response = await fetch("/api/admin/whatsapp/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, message }),
+      headers: hasImage ? undefined : { "Content-Type": "application/json" },
+      body: hasImage ? body : JSON.stringify({ phone, message }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -82,6 +94,7 @@ export default function WhatsAppAdminPage() {
     }
     setSendState("Pesan terkirim.");
     setMessage("");
+    setImageFile(null);
   };
 
   const handleLogout = async (clearSession: boolean) => {
@@ -246,14 +259,37 @@ export default function WhatsAppAdminPage() {
             <textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Tulis pesan..."
+              placeholder={imageFile ? "Tambahkan caption..." : "Tulis pesan..."}
               rows={4}
               className="rounded-xl border border-zinc-200 px-3 py-3 text-sm outline-none focus:border-blue-400"
             />
+            {imageFile ? (
+              <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate font-semibold">{imageFile.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => setImageFile(null)}
+                    className="text-zinc-400 hover:text-zinc-700"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-600 shadow-sm hover:border-zinc-300">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+              Gambar
+            </label>
             <button
               type="button"
               onClick={() => void handleSend()}
-              disabled={status?.status !== "connected"}
+              disabled={status?.status !== "connected" || (!message.trim() && !imageFile)}
               className="h-11 rounded-xl bg-zinc-950 px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-zinc-300"
             >
               Kirim
@@ -289,6 +325,16 @@ export default function WhatsAppAdminPage() {
                   <p className="mt-1 font-mono text-[11px] text-zinc-400">
                     {displayChatTarget(item.from)}
                   </p>
+                  {item.kind === "image" && item.mediaUrl ? (
+                    <a href={item.mediaUrl} target="_blank" rel="noreferrer" className="mt-2 block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.mediaUrl}
+                        alt={item.text || "Gambar WhatsApp"}
+                        className="max-h-48 w-full rounded-lg object-cover"
+                      />
+                    </a>
+                  ) : null}
                   <p className="mt-2 text-sm leading-5 text-zinc-700">{item.text}</p>
                 </div>
               ))

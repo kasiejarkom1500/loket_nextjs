@@ -1,11 +1,14 @@
 import makeWASocket, {
   DisconnectReason,
+  downloadMediaMessage,
   fetchLatestBaileysVersion,
   useMultiFileAuthState as createMultiFileAuthState,
+  type WAMessage,
   type WASocket,
 } from "@whiskeysockets/baileys";
 import fs from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
 import pino from "pino";
 
 export type WhatsAppConnectionStatus =
@@ -22,6 +25,17 @@ export type WhatsAppMessage = {
   text: string;
   timestamp: string;
   direction: "in" | "out";
+  kind: "text" | "image";
+  mediaUrl: string | null;
+  mimeType: string | null;
+  fileName: string | null;
+};
+
+export type WhatsAppImagePayload = {
+  buffer: Buffer;
+  mimeType?: string | null;
+  fileName?: string | null;
+  caption?: string | null;
 };
 
 export type WhatsAppStatus = {
@@ -37,6 +51,68 @@ const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL ?? "info" });
 
 function getAuthDir() {
   return path.resolve(process.cwd(), process.env.WHATSAPP_AUTH_DIR ?? ".baileys_auth");
+}
+
+function getMediaDir() {
+  return path.resolve(
+    process.cwd(),
+    process.env.WHATSAPP_MEDIA_DIR ?? "public/whatsapp-media",
+  );
+}
+
+function getMediaPublicUrl(fileName: string) {
+  return `/whatsapp-media/${fileName}`;
+}
+
+function sanitizeName(value: string | null | undefined) {
+  const base = path.basename(value ?? "").trim();
+  return base.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function extensionFromMimeType(mimeType: string | null | undefined) {
+  const normalized = (mimeType ?? "").split(";")[0].trim().toLowerCase();
+  switch (normalized) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    case "image/bmp":
+      return "bmp";
+    case "image/svg+xml":
+      return "svg";
+    default:
+      return "bin";
+  }
+}
+
+function normalizeCaption(value: string | null | undefined) {
+  const text = value?.trim() ?? "";
+  return text || "[Gambar]";
+}
+
+async function persistMedia(
+  buffer: Buffer,
+  mimeType: string | null | undefined,
+  sourceName: string | null | undefined,
+  prefix: string,
+) {
+  const mediaDir = getMediaDir();
+  await fs.mkdir(mediaDir, { recursive: true });
+  const fileName = `${prefix}-${Date.now()}-${randomUUID()}${
+    extensionFromMimeType(mimeType) ? `.${extensionFromMimeType(mimeType)}` : ""
+  }`;
+  const fullPath = path.join(mediaDir, fileName);
+  await fs.writeFile(fullPath, buffer);
+  return {
+    fileName,
+    url: getMediaPublicUrl(fileName),
+    mimeType: mimeType ?? null,
+    sourceName: sanitizeName(sourceName),
+  };
 }
 
 function normalizePhone(phone: string) {
@@ -123,6 +199,43 @@ class WhatsAppManager {
         text,
         timestamp: new Date().toISOString(),
         direction: "out" as const,
+      },
+      ...this.messages,
+    ].slice(0, 50);
+    this.touch();
+  }
+
+  async sendImage(target: string, payload: WhatsAppImagePayload) {
+    await this.ensureStarted();
+    if (!this.socket || this.status !== "connected") {
+      throw new Error("WhatsApp belum terhubung.");
+    }
+    const jid = resolveChatJid(target, this.jidAliases);
+    const caption = payload.caption?.trim() || undefined;
+    const displayText = normalizeCaption(payload.caption);
+    const result = await this.socket.sendMessage(jid, {
+      image: payload.buffer,
+      mimetype: payload.mimeType ?? undefined,
+      caption,
+    });
+    const stored = await persistMedia(
+      payload.buffer,
+      payload.mimeType,
+      payload.fileName,
+      "outgoing",
+    );
+    this.messages = [
+      {
+        id: result?.key.id ?? `out-${jid}-${Date.now()}`,
+        from: jid,
+        name: "Petugas",
+        text: displayText,
+        timestamp: new Date().toISOString(),
+        direction: "out" as const,
+        kind: "image",
+        mediaUrl: stored.url,
+        mimeType: stored.mimeType,
+        fileName: stored.fileName,
       },
       ...this.messages,
     ].slice(0, 50);
@@ -249,55 +362,121 @@ class WhatsAppManager {
       }
 
       for (const item of messages) {
-        const remoteJid = item.key.remoteJid;
-        if (
-          item.key.fromMe ||
-          !remoteJid ||
-          remoteJid === "status@broadcast" ||
-          remoteJid.endsWith("@broadcast")
-        ) {
-          continue;
-        }
-        const text =
-          item.message?.conversation ??
-          item.message?.extendedTextMessage?.text ??
-          item.message?.imageMessage?.caption ??
-          item.message?.videoMessage?.caption ??
-          "";
-        if (!text.trim()) {
-          continue;
-        }
-        const timestamp = item.messageTimestamp
-          ? new Date(Number(item.messageTimestamp) * 1000).toISOString()
-          : new Date().toISOString();
-        const inboundId = item.key.id ?? `${remoteJid}-${timestamp}-${text}`;
-        if (this.seenInboundMessageIds.has(inboundId)) {
-          continue;
-        }
-        this.seenInboundMessageIds.add(inboundId);
+        void this.handleIncomingMessage(item).catch((error) => {
+          logger.warn(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              messageId: item.key.id ?? null,
+            },
+            "Failed to process inbound WhatsApp message",
+          );
+        });
+      }
+    });
+  }
 
-        const strippedRemoteJid = stripChatSuffix(remoteJid);
-        this.jidAliases.set(strippedRemoteJid, remoteJid);
-        this.messages = this.messages.map((message) =>
-          message.from === strippedRemoteJid
-            ? { ...message, from: remoteJid }
-            : message,
+  private async handleIncomingMessage(item: WAMessage) {
+    const remoteJid = item.key.remoteJid;
+    if (
+      item.key.fromMe ||
+      !remoteJid ||
+      remoteJid === "status@broadcast" ||
+      remoteJid.endsWith("@broadcast")
+    ) {
+      return;
+    }
+
+    const imageMessage = item.message?.imageMessage ?? null;
+    const timestamp = item.messageTimestamp
+      ? new Date(Number(item.messageTimestamp) * 1000).toISOString()
+      : new Date().toISOString();
+    const inboundId =
+      item.key.id ??
+      `${remoteJid}-${timestamp}-${imageMessage?.caption ?? item.message?.conversation ?? ""}`;
+    if (this.seenInboundMessageIds.has(inboundId)) {
+      return;
+    }
+    this.seenInboundMessageIds.add(inboundId);
+
+    const strippedRemoteJid = stripChatSuffix(remoteJid);
+    this.jidAliases.set(strippedRemoteJid, remoteJid);
+    this.messages = this.messages.map((message) =>
+      message.from === strippedRemoteJid
+        ? { ...message, from: remoteJid }
+        : message,
+    );
+
+    if (imageMessage) {
+      try {
+        const buffer = await downloadMediaMessage(
+          item,
+          "buffer",
+          {},
+          {
+            logger,
+            reuploadRequest: async (message) => message,
+          },
         );
-
+        const stored = await persistMedia(
+          buffer,
+          imageMessage.mimetype ?? null,
+          imageMessage.fileName ?? null,
+          "incoming",
+        );
         this.messages = [
           {
             id: inboundId,
             from: remoteJid,
             name: item.pushName ?? "-",
-            text,
+            text: normalizeCaption(imageMessage.caption),
             timestamp,
             direction: "in" as const,
+            kind: "image",
+            mediaUrl: stored.url,
+            mimeType: stored.mimeType,
+            fileName: stored.fileName,
           },
           ...this.messages,
         ].slice(0, 50);
         this.touch();
+        return;
+      } catch (error) {
+        logger.warn(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            jid: remoteJid,
+            messageId: inboundId,
+          },
+          "Failed to download inbound image",
+        );
       }
-    });
+    }
+
+    const text =
+      item.message?.conversation ??
+      item.message?.extendedTextMessage?.text ??
+      item.message?.videoMessage?.caption ??
+      "";
+    if (!text.trim()) {
+      return;
+    }
+
+    this.messages = [
+      {
+        id: inboundId,
+        from: remoteJid,
+        name: item.pushName ?? "-",
+        text,
+        timestamp,
+        direction: "in" as const,
+        kind: "text",
+        mediaUrl: null,
+        mimeType: null,
+        fileName: null,
+      },
+      ...this.messages,
+    ].slice(0, 50);
+    this.touch();
   }
 
   private touch() {
@@ -334,4 +513,11 @@ export function getWhatsAppManager() {
 
 export async function sendWhatsAppText(phone: string, text: string) {
   return getWhatsAppManager().sendText(phone, text);
+}
+
+export async function sendWhatsAppImage(
+  phone: string,
+  payload: WhatsAppImagePayload,
+) {
+  return getWhatsAppManager().sendImage(phone, payload);
 }

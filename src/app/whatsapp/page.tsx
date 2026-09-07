@@ -10,6 +10,10 @@ type ChatMessage = {
   text: string;
   timestamp: string;
   direction: "in" | "out";
+  kind: "text" | "image";
+  mediaUrl: string | null;
+  mimeType: string | null;
+  fileName: string | null;
 };
 
 type ChatStatus = {
@@ -32,10 +36,20 @@ function displayChatTarget(value: string) {
   return value.replace("@s.whatsapp.net", "");
 }
 
+function formatMessageSummary(message: ChatMessage) {
+  if (message.kind === "image") {
+    return message.text && message.text !== "[Gambar]"
+      ? `📷 ${message.text}`
+      : "📷 Gambar";
+  }
+  return message.direction === "out" ? `Anda: ${message.text}` : message.text;
+}
+
 export default function WhatsAppChatPage() {
   const [status, setStatus] = useState<ChatStatus | null>(null);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const loadStatus = async () => {
@@ -80,14 +94,23 @@ export default function WhatsAppChatPage() {
   }, [activePhone, status?.messages]);
 
   const handleSend = async () => {
-    if (!activePhone || !draft.trim()) {
+    if (!activePhone || (!draft.trim() && !imageFile)) {
       return;
     }
     setInfo(null);
+    const hasImage = Boolean(imageFile);
+    const body = hasImage ? new FormData() : null;
+    if (body) {
+      body.append("phone", activePhone);
+      body.append("message", draft.trim());
+      body.append("image", imageFile as File);
+    }
     const response = await fetch("/api/whatsapp/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: activePhone, message: draft.trim() }),
+      headers: hasImage ? undefined : { "Content-Type": "application/json" },
+      body: hasImage
+        ? body
+        : JSON.stringify({ phone: activePhone, message: draft.trim() }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -95,6 +118,7 @@ export default function WhatsAppChatPage() {
       return;
     }
     setDraft("");
+    setImageFile(null);
     setInfo("Balasan terkirim.");
     await loadStatus();
   };
@@ -160,10 +184,7 @@ export default function WhatsAppChatPage() {
                       {displayChatTarget(conversation.phone)}
                     </p>
                     <p className="mt-2 truncate text-xs text-zinc-500">
-                      {conversation.lastMessage.direction === "out"
-                        ? "Anda: "
-                        : ""}
-                      {conversation.lastMessage.text}
+                      {formatMessageSummary(conversation.lastMessage)}
                     </p>
                   </button>
                 ))
@@ -211,7 +232,24 @@ export default function WhatsAppChatPage() {
                             : "border border-zinc-200 bg-zinc-50 text-zinc-800"
                         }`}
                       >
-                        <p>{message.text}</p>
+                        {message.kind === "image" && message.mediaUrl ? (
+                          <a
+                            href={message.mediaUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={message.mediaUrl}
+                              alt={message.text || "Gambar WhatsApp"}
+                              className="max-h-72 w-full rounded-xl object-cover"
+                            />
+                          </a>
+                        ) : null}
+                        <p className={message.kind === "image" ? "mt-2" : ""}>
+                          {message.text}
+                        </p>
                         <p
                           className={`mt-1 text-[10px] ${
                             message.direction === "out"
@@ -241,13 +279,38 @@ export default function WhatsAppChatPage() {
                   {info}
                 </p>
               ) : null}
+              {imageFile ? (
+                <div className="mb-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate font-semibold">{imageFile.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => setImageFile(null)}
+                      className="text-zinc-400 hover:text-zinc-700"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div className="flex gap-3">
+                <label className="inline-flex h-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-600 hover:border-zinc-300">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                    className="hidden"
+                  />
+                  Gambar
+                </label>
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder={
                     connected
-                      ? "Tulis balasan..."
+                      ? imageFile
+                        ? "Tambahkan caption..."
+                        : "Tulis balasan..."
                       : "WhatsApp belum terhubung. Hubungi admin untuk scan QR."
                   }
                   rows={2}
@@ -257,7 +320,7 @@ export default function WhatsAppChatPage() {
                 <button
                   type="button"
                   onClick={() => void handleSend()}
-                  disabled={!connected || !activePhone || !draft.trim()}
+                  disabled={!connected || !activePhone || (!draft.trim() && !imageFile)}
                   className="h-12 rounded-xl bg-zinc-950 px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-zinc-300"
                 >
                   Kirim

@@ -130,6 +130,10 @@ function stripChatSuffix(jid: string) {
   return jid.replace("@s.whatsapp.net", "").replace("@lid", "");
 }
 
+function getConversationKey(jid: string) {
+  return stripChatSuffix(jid);
+}
+
 function resolveChatJid(target: string, aliases: Map<string, string>) {
   const value = target.trim();
   if (value.includes("@")) {
@@ -191,15 +195,22 @@ class WhatsAppManager {
     }
     const jid = resolveChatJid(target, this.jidAliases);
     const result = await this.socket.sendMessage(jid, { text });
+    const conversationKey = getConversationKey(jid);
+    this.jidAliases.set(conversationKey, jid);
+    const outgoingMessage: WhatsAppMessage = {
+      id: result?.key.id ?? `out-${jid}-${Date.now()}`,
+      from: conversationKey,
+      name: "Petugas",
+      text,
+      timestamp: new Date().toISOString(),
+      direction: "out",
+      kind: "text",
+      mediaUrl: null,
+      mimeType: null,
+      fileName: null,
+    };
     this.messages = [
-      {
-        id: result?.key.id ?? `out-${jid}-${Date.now()}`,
-        from: jid,
-        name: "Petugas",
-        text,
-        timestamp: new Date().toISOString(),
-        direction: "out" as const,
-      },
+      outgoingMessage,
       ...this.messages,
     ].slice(0, 50);
     this.touch();
@@ -218,25 +229,28 @@ class WhatsAppManager {
       mimetype: payload.mimeType ?? undefined,
       caption,
     });
+    const conversationKey = getConversationKey(jid);
+    this.jidAliases.set(conversationKey, jid);
     const stored = await persistMedia(
       payload.buffer,
       payload.mimeType,
       payload.fileName,
       "outgoing",
     );
+    const outgoingMessage: WhatsAppMessage = {
+      id: result?.key.id ?? `out-${jid}-${Date.now()}`,
+      from: conversationKey,
+      name: "Petugas",
+      text: displayText,
+      timestamp: new Date().toISOString(),
+      direction: "out",
+      kind: "image",
+      mediaUrl: stored.url,
+      mimeType: stored.mimeType,
+      fileName: stored.fileName,
+    };
     this.messages = [
-      {
-        id: result?.key.id ?? `out-${jid}-${Date.now()}`,
-        from: jid,
-        name: "Petugas",
-        text: displayText,
-        timestamp: new Date().toISOString(),
-        direction: "out" as const,
-        kind: "image",
-        mediaUrl: stored.url,
-        mimeType: stored.mimeType,
-        fileName: stored.fileName,
-      },
+      outgoingMessage,
       ...this.messages,
     ].slice(0, 50);
     this.touch();
@@ -398,13 +412,8 @@ class WhatsAppManager {
     }
     this.seenInboundMessageIds.add(inboundId);
 
-    const strippedRemoteJid = stripChatSuffix(remoteJid);
-    this.jidAliases.set(strippedRemoteJid, remoteJid);
-    this.messages = this.messages.map((message) =>
-      message.from === strippedRemoteJid
-        ? { ...message, from: remoteJid }
-        : message,
-    );
+    const conversationKey = getConversationKey(remoteJid);
+    this.jidAliases.set(conversationKey, remoteJid);
 
     if (imageMessage) {
       try {
@@ -420,22 +429,23 @@ class WhatsAppManager {
         const stored = await persistMedia(
           buffer,
           imageMessage.mimetype ?? null,
-          imageMessage.fileName ?? null,
+          null,
           "incoming",
         );
+        const incomingImageMessage: WhatsAppMessage = {
+          id: inboundId,
+          from: conversationKey,
+          name: item.pushName ?? "-",
+          text: normalizeCaption(imageMessage.caption),
+          timestamp,
+          direction: "in",
+          kind: "image",
+          mediaUrl: stored.url,
+          mimeType: stored.mimeType,
+          fileName: stored.fileName,
+        };
         this.messages = [
-          {
-            id: inboundId,
-            from: remoteJid,
-            name: item.pushName ?? "-",
-            text: normalizeCaption(imageMessage.caption),
-            timestamp,
-            direction: "in" as const,
-            kind: "image",
-            mediaUrl: stored.url,
-            mimeType: stored.mimeType,
-            fileName: stored.fileName,
-          },
+          incomingImageMessage,
           ...this.messages,
         ].slice(0, 50);
         this.touch();
@@ -461,19 +471,20 @@ class WhatsAppManager {
       return;
     }
 
+    const incomingTextMessage: WhatsAppMessage = {
+      id: inboundId,
+      from: conversationKey,
+      name: item.pushName ?? "-",
+      text,
+      timestamp,
+      direction: "in",
+      kind: "text",
+      mediaUrl: null,
+      mimeType: null,
+      fileName: null,
+    };
     this.messages = [
-      {
-        id: inboundId,
-        from: remoteJid,
-        name: item.pushName ?? "-",
-        text,
-        timestamp,
-        direction: "in" as const,
-        kind: "text",
-        mediaUrl: null,
-        mimeType: null,
-        fileName: null,
-      },
+      incomingTextMessage,
       ...this.messages,
     ].slice(0, 50);
     this.touch();
@@ -485,17 +496,18 @@ class WhatsAppManager {
 
   private normalizeMessageJids() {
     for (const message of this.messages) {
-      if (message.from.includes("@")) {
-        this.jidAliases.set(stripChatSuffix(message.from), message.from);
+      const conversationKey = getConversationKey(message.from);
+      if (message.from !== conversationKey) {
+        this.jidAliases.set(conversationKey, message.from);
       }
     }
 
     this.messages = this.messages.map((message) => {
-      if (message.from.includes("@")) {
-        return message;
-      }
-      const aliasedJid = this.jidAliases.get(message.from);
-      return aliasedJid ? { ...message, from: aliasedJid } : message;
+      const conversationKey = getConversationKey(message.from);
+      return {
+        ...message,
+        from: conversationKey,
+      };
     });
   }
 }

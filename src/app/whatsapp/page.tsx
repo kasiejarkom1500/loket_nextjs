@@ -48,6 +48,7 @@ function formatMessageSummary(message: ChatMessage) {
 export default function WhatsAppChatPage() {
   const [status, setStatus] = useState<ChatStatus | null>(null);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+  const [targetPhone, setTargetPhone] = useState("");
   const [draft, setDraft] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -84,7 +85,10 @@ export default function WhatsAppChatPage() {
     }));
   }, [status?.messages]);
 
-  const activePhone = selectedPhone ?? conversations[0]?.phone ?? null;
+  const typedPhone = targetPhone.trim();
+  const activePhone = selectedPhone ?? typedPhone ?? conversations[0]?.phone ?? null;
+  const activeConversation = conversations.find((item) => item.phone === activePhone);
+  const isNewConversation = Boolean(activePhone && !activeConversation);
 
   const selectedMessages = useMemo(() => {
     return (status?.messages ?? [])
@@ -120,6 +124,8 @@ export default function WhatsAppChatPage() {
     setDraft("");
     setImageFile(null);
     setInfo("Balasan terkirim.");
+    setSelectedPhone(activePhone);
+    setTargetPhone(activePhone);
     await loadStatus();
   };
 
@@ -152,6 +158,23 @@ export default function WhatsAppChatPage() {
                 Login nomor WhatsApp dilakukan admin di halaman Pengaturan
                 WhatsApp. Petugas bisa membalas setelah status terhubung.
               </p>
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-3">
+                <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                  Nomor tujuan
+                </label>
+                <input
+                  value={targetPhone}
+                  onChange={(event) => {
+                    setTargetPhone(event.target.value);
+                    setSelectedPhone(null);
+                  }}
+                  placeholder="08xxxxxxxxxx"
+                  className="mt-2 h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-blue-400"
+                />
+                <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                  Isi nomor untuk mulai chat baru atau pilih percakapan yang sudah ada.
+                </p>
+              </div>
             </div>
 
             <div className="max-h-[520px] overflow-auto p-3">
@@ -160,7 +183,10 @@ export default function WhatsAppChatPage() {
                   <button
                     key={conversation.phone}
                     type="button"
-                    onClick={() => setSelectedPhone(conversation.phone)}
+                    onClick={() => {
+                      setSelectedPhone(conversation.phone);
+                      setTargetPhone(conversation.phone);
+                    }}
                     className={`mb-2 w-full rounded-xl border p-3 text-left transition ${
                       activePhone === conversation.phone
                         ? "border-blue-200 bg-blue-50"
@@ -200,11 +226,18 @@ export default function WhatsAppChatPage() {
             <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4">
               <div>
                 <p className="text-sm font-bold text-zinc-950">
-                  {activePhone ? displayChatTarget(activePhone) : "Pilih percakapan"}
+                  {activePhone
+                    ? displayChatTarget(activePhone)
+                    : "Pilih percakapan"}
                 </p>
                 <p className="mt-1 text-xs text-zinc-400">
                   Nomor login: {status?.phone ?? "-"}
                 </p>
+                {isNewConversation ? (
+                  <p className="mt-1 text-xs font-semibold text-amber-600">
+                    Percakapan baru
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -265,10 +298,19 @@ export default function WhatsAppChatPage() {
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-center">
-                  <p className="max-w-sm text-sm leading-6 text-zinc-400">
-                    Pilih percakapan di sisi kiri untuk membaca dan membalas
-                    pesan WhatsApp.
-                  </p>
+                  <div className="max-w-sm text-sm leading-6 text-zinc-400">
+                    {isNewConversation ? (
+                      <p>
+                        Belum ada riwayat untuk nomor ini. Kirim pesan pertama
+                        dari bawah untuk memulai percakapan.
+                      </p>
+                    ) : (
+                      <p>
+                        Pilih percakapan di sisi kiri untuk membaca dan
+                        membalas pesan WhatsApp.
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -323,7 +365,7 @@ export default function WhatsAppChatPage() {
                   disabled={!connected || !activePhone || (!draft.trim() && !imageFile)}
                   className="h-12 rounded-xl bg-zinc-950 px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-zinc-300"
                 >
-                  Kirim
+                  {isNewConversation ? "Kirim awal" : "Kirim"}
                 </button>
               </div>
             </div>

@@ -92,6 +92,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/rekap-saya") || pathname.startsWith("/api/my-recap")) {
+    const session = await getSession(request);
+    if (!session || session.role === "ADMIN") {
+      if (pathname.startsWith("/api/my-recap")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (session?.role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin/attendance-recap", request.url));
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (session.role !== "LAYANAN_PUBLIK" && session.role !== "PERMINTAAN_DATA") {
+      if (pathname.startsWith("/api/my-recap")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const session = await getSession(request);
     if (!session || !session.isAdmin) {
@@ -117,6 +138,8 @@ export const config = {
     "/whatsapp/:path*",
     "/api/whatsapp/:path*",
     "/profile/:path*",
+    "/rekap-saya/:path*",
+    "/api/my-recap/:path*",
     "/admin/:path*",
     "/api/admin/:path*",
   ],

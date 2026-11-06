@@ -31,6 +31,7 @@ const ADMIN_NAV: NavItem[] = [
 
 const DATA_OFFICER_NAV: NavItem[] = [
   { href: "/attendance", label: "Presensi", icon: "📅" },
+  { href: "/rekap-saya", label: "Rekap Saya", icon: "📊" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
   { href: "/whatsapp", label: "Chat WA", icon: "WA" },
   { href: "/profile", label: "Akun", icon: "👤" },
@@ -105,6 +106,11 @@ function AppNavInner() {
         href: cid ? `/loket/${cid}?tab=attendance` : "/loket?tab=attendance",
         label: "Presensi",
         icon: "📅",
+      },
+      {
+        href: "/rekap-saya",
+        label: "Rekap Saya",
+        icon: "📊",
       },
       {
         href: "/online-requests",

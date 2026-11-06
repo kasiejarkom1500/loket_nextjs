@@ -1,0 +1,619 @@
+commit beeb94052064f45e0059f14ed2cada80c726bbf6
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Wed Mar 11 14:11:52 2026 +0700
+
+    Initial commit from Create Next App
+
+ .gitignore          |   41 +
+ README.md           |   36 +
+ eslint.config.mjs   |   18 +
+ next.config.ts      |    7 +
+ package-lock.json   | 6592 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ package.json        |   26 +
+ postcss.config.mjs  |    7 +
+ public/file.svg     |    1 +
+ public/globe.svg    |    1 +
+ public/next.svg     |    1 +
+ public/vercel.svg   |    1 +
+ public/window.svg   |    1 +
+ src/app/favicon.ico |  Bin 0 -> 25931 bytes
+ src/app/globals.css |   26 +
+ src/app/layout.tsx  |   34 +
+ src/app/page.tsx    |   65 +
+ tsconfig.json       |   34 +
+ 17 files changed, 6891 insertions(+)
+
+commit d06fb574deddb92337e27e76432cbe4f7d865f81
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Mar 12 11:04:12 2026 +0700
+
+    feat: bootstrap loket queue system
+
+ .gitignore                                      |    3 +
+ README.md                                       |  108 +-
+ firebase/.gitkeep                               |    1 +
+ implementation_plan.md                          |   87 +
+ middleware.ts                                   |   76 +
+ package-lock.json                               | 3575 ++++++++++++++++++++++-
+ package.json                                    |   17 +-
+ prisma/schema.prisma                            |  108 +
+ prisma/seed.js                                  |   58 +
+ public/audio/notify.wav                         |  Bin 0 -> 641 bytes
+ public/templates/assignment_template.xlsx       |  Bin 0 -> 16392 bytes
+ src/app/admin/AdminNav.tsx                      |   47 +
+ src/app/admin/assignments/page.tsx              |  477 +++
+ src/app/admin/layout.tsx                        |   16 +
+ src/app/admin/users/page.tsx                    |  355 +++
+ src/app/api/admin/assignments/import/route.ts   |  165 ++
+ src/app/api/admin/assignments/route.ts          |  131 +
+ src/app/api/admin/users/route.ts                |  171 ++
+ src/app/api/auth/login/route.ts                 |  126 +
+ src/app/api/auth/logout/route.ts                |   14 +
+ src/app/api/counters/route.ts                   |    9 +
+ src/app/api/queue/call/route.ts                 |   71 +
+ src/app/api/queue/complete/route.ts             |   53 +
+ src/app/api/queue/current/route.ts              |    7 +
+ src/app/api/queue/generate/route.ts             |   81 +
+ src/app/api/queue/update-service/route.ts       |   44 +
+ src/app/api/queue/update-staff-purpose/route.ts |   36 +
+ src/app/api/rating/route.ts                     |   38 +
+ src/app/api/services/route.ts                   |    9 +
+ src/app/display/page.tsx                        |  223 ++
+ src/app/globals.css                             |   16 +-
+ src/app/kiosk/page.tsx                          |  341 +++
+ src/app/layout.tsx                              |    5 +-
+ src/app/login/page.tsx                          |  137 +
+ src/app/loket/[id]/page.tsx                     |  420 +++
+ src/app/loket/layout.tsx                        |   27 +
+ src/app/page.tsx                                |  106 +-
+ src/app/rating/page.tsx                         |  110 +
+ src/lib/auth.ts                                 |   38 +
+ src/lib/firebase-admin.ts                       |   52 +
+ src/lib/firebase-client.ts                      |   24 +
+ src/lib/prisma.ts                               |   13 +
+ src/lib/realtime.ts                             |  137 +
+ task.md                                         |   55 +
+ 44 files changed, 7420 insertions(+), 167 deletions(-)
+
+commit 475b6a01a04c605cde8997d69ccfb086357eab54
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Mar 12 15:13:33 2026 +0700
+
+    Update fitur fitur
+
+ middleware.ts                                   |   9 +
+ prisma/schema.prisma                            |  53 +++
+ prisma/seed.js                                  |   6 +-
+ src/app/admin/AdminNav.tsx                      |  58 ++-
+ src/app/admin/assignments/page.tsx              |  15 +-
+ src/app/admin/rating-recap/page.tsx             | 142 ++++++
+ src/app/admin/security-officers/page.tsx        | 179 ++++++++
+ src/app/admin/services/page.tsx                 | 248 +++++++++++
+ src/app/admin/visitors/page.tsx                 | 155 +++++++
+ src/app/api/admin/assignments/route.ts          |  14 +-
+ src/app/api/admin/ratings/recap/export/route.ts | 105 +++++
+ src/app/api/admin/ratings/recap/route.ts        |  93 ++++
+ src/app/api/admin/security-officers/route.ts    |  57 +++
+ src/app/api/admin/services/route.ts             |  72 +++
+ src/app/api/admin/visitors/export/route.ts      |  71 +++
+ src/app/api/admin/visitors/route.ts             |  60 +++
+ src/app/api/assignments/active/route.ts         |  44 ++
+ src/app/api/attendance/check-in/route.ts        |  60 +++
+ src/app/api/attendance/check-out/route.ts       | 123 ++++++
+ src/app/api/attendance/status/route.ts          |  56 +++
+ src/app/api/auth/me/route.ts                    |  22 +
+ src/app/api/auth/sso-login/route.ts             | 174 ++++++++
+ src/app/api/queue/call/route.ts                 |  58 +++
+ src/app/api/queue/completed-today/route.ts      |  36 ++
+ src/app/api/rating/route.ts                     |  25 +-
+ src/app/api/security-officers/route.ts          |   9 +
+ src/app/api/users/route.ts                      |  16 +
+ src/app/attendance/page.tsx                     | 242 ++++++++++
+ src/app/kiosk/page.tsx                          |  24 +-
+ src/app/login/page.tsx                          |  56 +++
+ src/app/loket/[id]/page.tsx                     | 562 +++++++++++++++++++++++-
+ src/app/rating/page.tsx                         | 191 ++++++--
+ src/lib/realtime.ts                             |  24 +-
+ 33 files changed, 2990 insertions(+), 69 deletions(-)
+
+commit 7093dd76ffabf195e7fe8fc6f182f9351e80585e
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Mar 12 15:13:57 2026 +0700
+
+    udpate task.md
+
+ task.md | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+commit a8190bbad8d185568e62bc1e3928a1427523891d
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Fri Mar 27 16:51:40 2026 +0700
+
+    Perbaikan taampilan dengan anti-gravity cloud sonnet untuk dissplay, ambil antrian dan rating
+
+ src/app/display/page.tsx | 381 +++++++++++++++++++----------
+ src/app/globals.css      |   7 +-
+ src/app/kiosk/page.tsx   | 619 ++++++++++++++++++++++++++++++-----------------
+ src/app/login/page.tsx   | 362 +++++++++++++++++++++------
+ src/app/rating/page.tsx  | 466 ++++++++++++++++++++++++++---------
+ src/lib/realtime.ts      |  20 +-
+ 6 files changed, 1296 insertions(+), 559 deletions(-)
+
+commit 83707db050a0cd18b3336be22331e67b8641ede4
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Fri Mar 27 17:49:57 2026 +0700
+
+    Penambahan fitur panggil suara dan file - file data audionya
+
+ public/audio/angka-0.wav            | Bin 0 -> 30544 bytes
+ public/audio/angka-1.wav            | Bin 0 -> 39668 bytes
+ public/audio/angka-2.wav            | Bin 0 -> 35336 bytes
+ public/audio/angka-3.wav            | Bin 0 -> 34862 bytes
+ public/audio/angka-4.wav            | Bin 0 -> 32232 bytes
+ public/audio/angka-5.wav            | Bin 0 -> 35344 bytes
+ public/audio/angka-6.wav            | Bin 0 -> 33172 bytes
+ public/audio/angka-7.wav            | Bin 0 -> 36586 bytes
+ public/audio/angka-8.wav            | Bin 0 -> 45092 bytes
+ public/audio/angka-9.wav            | Bin 0 -> 46828 bytes
+ public/audio/belas.wav              | Bin 0 -> 42800 bytes
+ public/audio/intro.wav              | Bin 0 -> 73340 bytes
+ public/audio/letter-a.wav           | Bin 0 -> 25404 bytes
+ public/audio/letter-b.wav           | Bin 0 -> 29570 bytes
+ public/audio/letter-c.wav           | Bin 0 -> 28388 bytes
+ public/audio/loket.wav              | Bin 0 -> 34630 bytes
+ public/audio/pelayanan-publik.wav   | Bin 0 -> 65468 bytes
+ public/audio/permintaan-data.wav    | Bin 0 -> 72588 bytes
+ public/audio/puluh.wav              | Bin 0 -> 34634 bytes
+ public/audio/ratus.wav              | Bin 0 -> 45004 bytes
+ public/audio/sebelas.wav            | Bin 0 -> 50704 bytes
+ public/audio/sepuluh.wav            | Bin 0 -> 45192 bytes
+ public/audio/seratus.wav            | Bin 0 -> 51008 bytes
+ src/app/api/queue/announce/route.ts |  68 ++++++++++++++++++++++++++
+ src/app/display/page.tsx            |  94 ++++++++++++++++++++++++++++++++----
+ src/app/loket/[id]/page.tsx         |  27 +++++++++++
+ 26 files changed, 180 insertions(+), 9 deletions(-)
+
+commit 59757d59fdda238bf5a4181d80b4c521a2653379
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Fri Mar 27 17:50:13 2026 +0700
+
+    Tampilan menu rekap absensi di admin
+
+ src/app/admin/AdminNav.tsx                  |   1 +
+ src/app/admin/attendance-recap/page.tsx     | 211 ++++++++++++++++++++++++++++
+ src/app/api/admin/attendance/recap/route.ts |  79 +++++++++++
+ 3 files changed, 291 insertions(+)
+
+commit d3864f99d326b1ab2dbbe63d0008c5670edd206a
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Fri Mar 27 17:54:20 2026 +0700
+
+    perbaikan untuk build production
+
+ src/app/login/page.tsx | 12 ++++++++++--
+ src/lib/realtime.ts    |  2 +-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+commit daecfaf5dd07198788b7badb8f87159efc92cabc
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 23 10:45:09 2026 +0700
+
+    Perbaikan tampilan dengan claude opus untuk navbar staf (admin,penjaga) dan home page
+
+ .gitignore                                         |   3 +
+ Permintaan Data Pengunjung PST 2026 (Jawaban).xlsx | Bin 0 -> 14178 bytes
+ middleware.ts                                      |  14 +
+ src/app/admin/AdminNav.tsx                         | 127 ++++--
+ src/app/api/auth/me/route.ts                       |   2 +
+ src/app/api/queue/complete/route.ts                |  49 +-
+ src/app/api/sheets/online-requests/route.ts        |  97 ++++
+ src/app/api/sheets/online-requests/update/route.ts | 114 +++++
+ src/app/attendance/page.tsx                        |  67 +--
+ src/app/loket/[id]/page.tsx                        |  64 +--
+ src/app/online-requests/page.tsx                   | 404 +++++++++++++++++
+ src/app/page.tsx                                   | 499 +++++++++++++++++++--
+ src/components/AppNav.tsx                          | 208 +++++++++
+ src/lib/google-sheets.ts                           | 169 +++++++
+ task.md                                            |   4 +
+ 15 files changed, 1627 insertions(+), 194 deletions(-)
+
+commit 7eec600669c1cd483ffc837c8cad82c59337125f
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 23 13:12:02 2026 +0700
+
+    fungsi untuk simpan permintaan online telah berhasil bekerja
+
+ src/app/api/sheets/online-requests/route.ts        | 22 +++++--
+ src/app/api/sheets/online-requests/update/route.ts | 77 +++++++++++++---------
+ src/app/online-requests/page.tsx                   |  7 +-
+ src/components/AppNav.tsx                          | 12 +++-
+ src/lib/google-sheets.ts                           |  2 +-
+ 5 files changed, 76 insertions(+), 44 deletions(-)
+
+commit 050cda2899b82faf49c69da5bd552076a37182d5
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 23 13:22:59 2026 +0700
+
+    Perbaikan tampilan display TV
+
+ src/app/display/page.tsx | 344 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 191 insertions(+), 153 deletions(-)
+
+commit fc6c7edb781d489745fe86fb126b0974028b687d
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 08:51:33 2026 +0700
+
+    Penyesuaian ketika firebase mati
+
+ src/app/display/page.tsx    | 96 ++++++++++++++++++++++++++++-----------------
+ src/app/loket/[id]/page.tsx | 26 +++++++-----
+ src/lib/firebase-client.ts  | 16 +++++++-
+ 3 files changed, 92 insertions(+), 46 deletions(-)
+
+commit 849385055a0adad1f396dace3dba6d3bb1bea42c
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 09:02:39 2026 +0700
+
+    Penyesuaian seed dengan data loket BPS
+
+ prisma/seed.js | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+commit 19ada888853a06836e4946f48c617b029cc62121
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:07:59 2026 +0700
+
+    Menambahkan docker setup
+
+ Dockerfile                   | 41 +++++++++++++++++++++++++++++++++++++++++
+ README.md                    | 21 +++++++++++++++++++++
+ docker-compose.yml           | 37 +++++++++++++++++++++++++++++++++++++
+ scripts/docker-entrypoint.sh | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 141 insertions(+)
+
+commit 41bfd40ebabb5f2147612494af20e584134cdcf7
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:10:58 2026 +0700
+
+    penyesuain db docker opsional
+
+ README.md          | 9 +++++++++
+ docker-compose.yml | 6 +-----
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+commit ddec0f012b48759b02ef2544c815db1a0389103c
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:17:51 2026 +0700
+
+    menambah env example
+
+ env.example | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+commit 0df0b0453a337cf22ceb4cabc021a46c698276f0
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:30:28 2026 +0700
+
+    menambah docker ignore
+
+ .dockerignore | 10 ++++++++++
+ Dockerfile    | 10 ++--------
+ 2 files changed, 12 insertions(+), 8 deletions(-)
+
+commit 1410dbfb1d8921c967ac945d9b5ce4c8c93068f2
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:33:08 2026 +0700
+
+    Update penjelasan redme terkait dengan serviceAccount docker
+
+ README.md | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+commit 5bd384dac1f9165830cdbef2e18f7a55158306c9
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Apr 30 11:56:41 2026 +0700
+
+    perbaikan build
+
+ Dockerfile | 2 ++
+ 1 file changed, 2 insertions(+)
+
+commit 89034d74e184374fd725653708f20a59b0e9126d
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 7 10:54:51 2026 +0700
+
+    Selesai Production Ver 1.0
+
+ Dockerfile                                | 19 +++++++++++++++++-
+ docker-compose.yml                        | 18 ++++++++++++++---
+ scripts/docker-entrypoint.sh              | 30 +++++++++++++++++++++++------
+ src/app/api/admin/assignments/route.ts    | 28 ++++++++++-----------------
+ src/app/api/assignments/active/route.ts   | 15 +--------------
+ src/app/api/attendance/check-in/route.ts  | 12 +-----------
+ src/app/api/attendance/check-out/route.ts | 12 +-----------
+ src/app/api/attendance/status/route.ts    | 15 +--------------
+ src/app/api/auth/login/route.ts           | 15 +--------------
+ src/app/api/auth/sso-login/route.ts       | 15 +--------------
+ src/app/api/queue/call/route.ts           |  9 +++------
+ src/app/api/queue/generate/route.ts       |  6 ++----
+ src/app/display/page.tsx                  | 22 +++++++++++++++++++++
+ src/lib/time.ts                           | 32 +++++++++++++++++++++++++++++++
+ 14 files changed, 132 insertions(+), 116 deletions(-)
+
+commit f91687db79f4fbabcacddee91c74e0de4fe63847
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 7 12:57:45 2026 +0700
+
+    Perbaikan admin selalu bisa masuk tanpa shift
+
+ src/app/api/auth/login/route.ts     | 34 +++++++++++++++++++---------------
+ src/app/api/auth/sso-login/route.ts | 36 ++++++++++++++++++++----------------
+ src/app/login/page.tsx              |  4 ++--
+ 3 files changed, 41 insertions(+), 33 deletions(-)
+
+commit d4bcb0665874936b92d8c55260cfb6d2763a0f4d
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 09:55:31 2026 +0700
+
+    Perbaikan modul online request sehingga ada filter status
+
+ src/app/api/auth/login/route.ts                    |   5 +-
+ src/app/api/auth/sso-login/route.ts                |   5 +-
+ src/app/api/queue/complete/route.ts                |  41 --
+ src/app/api/sheets/online-requests/route.ts        |  10 +-
+ src/app/api/sheets/online-requests/update/route.ts |  41 +-
+ src/app/online-requests/page.tsx                   | 671 +++++++++++++++------
+ src/components/AppNav.tsx                          |   5 +
+ 7 files changed, 553 insertions(+), 225 deletions(-)
+
+commit db4bbe8e6a837d9a652b42921b17ba8c2a5d8241
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 09:59:14 2026 +0700
+
+    Tambahkan layanan auto refresh tiap 15 detik di online requests
+
+ env.example                      |  4 ++++
+ src/app/online-requests/page.tsx | 16 ++++++++++++++++
+ 2 files changed, 20 insertions(+)
+
+commit 95387095f2b774ecdf7ec39f62bf602b7ce9b678
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 12:08:13 2026 +0700
+
+    tambahkan request pooll ke docker composee
+
+ docker-compose.yml | 1 +
+ 1 file changed, 1 insertion(+)
+
+commit 8624fa5807aba788110fffb34c3d52a25373b318
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 15:21:40 2026 +0700
+
+    1. Role Layanan Publik telah disesuaikan ssehingga mengisi ke keolom petugas pelayanan dan pengaduan
+    2. Attendace untuk role permintaan data telah disamakan dengan pelayanan publik
+
+ src/app/api/sheets/online-requests/route.ts        |   4 +
+ src/app/api/sheets/online-requests/update/route.ts |  18 +-
+ src/app/attendance/page.tsx                        | 275 ++++++++++++---------
+ src/app/online-requests/page.tsx                   |  20 +-
+ src/app/page.tsx                                   |   8 +
+ 5 files changed, 198 insertions(+), 127 deletions(-)
+
+commit 2d0d36d0defeaabe39a3f1e736d1392133b91ad5
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 15:44:53 2026 +0700
+
+    Perbaikan tampilan menu edit untuk admin dengan claude
+
+ src/app/admin/assignments/page.tsx       | 747 +++++++++++++++----------------
+ src/app/admin/security-officers/page.tsx | 261 +++++------
+ src/app/admin/services/page.tsx          | 349 +++++++--------
+ src/app/admin/users/page.tsx             | 526 +++++++++++-----------
+ src/app/admin/visitors/page.tsx          | 186 ++++----
+ 5 files changed, 1010 insertions(+), 1059 deletions(-)
+
+commit 9168b338f68a450d7111f9aa6448f032735354c2
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 15:48:33 2026 +0700
+
+    Perbaikan detail selesai
+
+ src/app/online-requests/page.tsx | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 9cf3e07b084bcbfb72ef95488b5aecabb7bb3192
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 15:49:48 2026 +0700
+
+    Prbaikan status selesai
+
+ src/app/online-requests/page.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 8b1074268a1059875d0bc04d227ccac15c73cd03
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 9 18:07:02 2026 +0700
+
+    Perubahan cara upload penugasan denganb template sesuai yang baisa dipakai
+
+ public/templates/assignment_template.xlsx     | Bin 16392 -> 10340 bytes
+ src/app/admin/assignments/page.tsx            |   7 +-
+ src/app/api/admin/assignments/import/route.ts | 242 ++++++++++++++++++++------
+ 3 files changed, 194 insertions(+), 55 deletions(-)
+
+commit 44b9d17e653fff4a37bb450ed97d250b9b34e2b6
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 13:22:25 2026 +0700
+
+    Perbaikan penambahan shift pengaturan d menu admin
+
+ prisma/schema.prisma                          |   9 ++
+ prisma/seed.js                                |  12 +++
+ src/app/admin/assignments/page.tsx            | 120 +++++++++++++++++++++++++-
+ src/app/api/admin/assignments/import/route.ts |   8 +-
+ src/app/api/admin/shift-settings/route.ts     |  77 +++++++++++++++++
+ src/app/api/assignments/active/route.ts       |   2 +-
+ src/app/api/attendance/check-in/route.ts      |   2 +-
+ src/app/api/attendance/check-out/route.ts     |   2 +-
+ src/app/api/attendance/status/route.ts        |   2 +-
+ src/app/api/auth/login/route.ts               |   2 +-
+ src/app/api/auth/sso-login/route.ts           |   2 +-
+ src/app/api/queue/call/route.ts               |   2 +-
+ src/lib/time.ts                               |  74 +++++++++++++++-
+ 13 files changed, 297 insertions(+), 17 deletions(-)
+
+commit 0177df7dc3daefdf89233210b5fc216681830653
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 13:33:06 2026 +0700
+
+    feat: add configurable shift hours with overlap handling
+
+ src/app/api/attendance/check-in/route.ts  |  2 +-
+ src/app/api/attendance/check-out/route.ts |  2 +-
+ src/app/api/attendance/status/route.ts    |  2 +-
+ src/app/api/auth/login/route.ts           | 33 +++++++++++++++++++++++++++----
+ src/app/api/auth/sso-login/route.ts       | 33 +++++++++++++++++++++++++++----
+ src/lib/time.ts                           | 26 ++++++++++++++++++++++--
+ 6 files changed, 85 insertions(+), 13 deletions(-)
+
+commit dfff767993a48bc2a27eacb02996b490a55f1aed
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 13:44:17 2026 +0700
+
+    `feat: allow logged-in users to update username and password`
+
+ middleware.ts                     |  10 ++
+ src/app/admin/AdminNav.tsx        |   6 +-
+ src/app/api/auth/profile/route.ts | 118 +++++++++++++++++++++
+ src/app/profile/page.tsx          | 215 ++++++++++++++++++++++++++++++++++++++
+ src/components/AppNav.tsx         |  12 ++-
+ 5 files changed, 357 insertions(+), 4 deletions(-)
+
+commit 4a8ea7e914cb5d4535307ea6bedd5d030980d815
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 14:01:47 2026 +0700
+
+    `feat: improve attendance status visibility with shift lateness info`
+    
+    Detail:
+    - add colored attendance status cards for public service and data request officers
+    - show configured shift time range in attendance views
+    - calculate and display late check-in minutes from shift start time
+    - refresh attendance metadata after check-in and check-out
+    - extend attendance status API with shift metadata and lateness info
+
+ src/app/api/attendance/status/route.ts |  50 ++++++++++++-
+ src/app/attendance/page.tsx            | 126 +++++++++++++++++++++++++--------
+ src/app/loket/[id]/page.tsx            | 115 +++++++++++++++++++++++++-----
+ 3 files changed, 243 insertions(+), 48 deletions(-)
+
+commit 86c1cfb6deab140afe3dd7638be3650d33c3f95a
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 14:28:21 2026 +0700
+
+    feat: make shift attendance buffer configurable by admin
+    
+    Detail:
+    
+    add configurable early login buffer per shift in admin shift settings
+    store earlyCheckInBufferMinutes in ShiftSetting
+    use per-shift buffer when resolving login-eligible shifts
+    keep default buffer at 30 minutes
+    validate buffer range from 0 to 240 minutes
+    update seed defaults and Prisma client for the new field
+
+ prisma/schema.prisma                      | 13 ++++---
+ prisma/seed.js                            |  8 ++--
+ src/app/admin/assignments/page.tsx        | 41 +++++++++++++++++---
+ src/app/api/admin/shift-settings/route.ts | 14 ++++++-
+ src/app/api/attendance/check-out/route.ts | 57 ++++++++++++++++++++++++++-
+ src/app/api/auth/login/route.ts           | 19 ++++-----
+ src/app/api/auth/sso-login/route.ts       | 19 ++++-----
+ src/app/loket/[id]/page.tsx               |  3 ++
+ src/lib/time.ts                           | 64 ++++++++++++++++++++++++++++++-
+ 9 files changed, 201 insertions(+), 37 deletions(-)
+
+commit a4ca438ee1b8b10392633378c8ee1c45ef54df79
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu May 21 17:17:33 2026 +0700
+
+    feat(admin): tampilkan petugas pada data pengunjung
+
+ src/app/admin/visitors/page.tsx            | 25 +++++++++++++++++++++++--
+ src/app/api/admin/visitors/export/route.ts | 12 +++++++++++-
+ src/app/api/admin/visitors/route.ts        | 12 +++++++++++-
+ 3 files changed, 45 insertions(+), 4 deletions(-)
+
+commit 704833a27952f9658172cea4d0f5f76eef7ae99e
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Sat May 23 13:11:55 2026 +0700
+
+    feat: integrate WhatsApp linked-device chat and notifications
+    
+    - add Baileys-based WhatsApp manager with persistent local auth session
+    - add admin WhatsApp settings page for QR login, status, logout, and test send
+    - add staff WhatsApp chat page for reading and replying to incoming messages
+    - add WhatsApp API routes for admin status/send/logout and staff status/send
+    - protect staff WhatsApp routes with existing session middleware
+    - add queue WhatsApp notifications for queue creation and queue call via env flags
+    - support WhatsApp internal JID targets such as @lid to avoid replying to wrong chats
+    - filter WhatsApp status/broadcast messages from inbox
+    - deduplicate inbound WhatsApp messages to avoid duplicate React keys
+    - add WhatsApp navigation entries for admin and staff roles
+    - document WhatsApp setup, staff chat, queue notifications, limitations, and Docker session mount
+    - add Baileys, qrcode, pino, and qrcode types dependencies
+    - ignore local WhatsApp auth session directory
+
+ .gitignore                                 |   3 +
+ README.md                                  | 134 ++++-
+ env.example                                |  10 +
+ middleware.ts                              |  14 +
+ next.config.ts                             |   2 +-
+ package-lock.json                          | 886 ++++++++++++++++++++++++++++-
+ package.json                               |   4 +
+ src/app/admin/AdminNav.tsx                 |   1 +
+ src/app/admin/whatsapp/page.tsx            | 283 +++++++++
+ src/app/api/admin/whatsapp/logout/route.ts |  13 +
+ src/app/api/admin/whatsapp/send/route.ts   |  27 +
+ src/app/api/admin/whatsapp/status/route.ts |  20 +
+ src/app/api/queue/call/route.ts            |  18 +-
+ src/app/api/queue/generate/route.ts        |  14 +
+ src/app/api/whatsapp/send/route.ts         |  27 +
+ src/app/api/whatsapp/status/route.ts       |  19 +
+ src/app/page.tsx                           |  16 +
+ src/app/whatsapp/page.tsx                  | 272 +++++++++
+ src/components/AppNav.tsx                  |   6 +
+ src/lib/whatsapp.ts                        | 290 ++++++++++
+ 20 files changed, 2014 insertions(+), 45 deletions(-)
+
+commit de5f824a3cfd39799e62582b2e51be95f68688c9
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Mon Jun 22 10:45:40 2026 +0700
+
+    fix: use admin default counter and limit SKD control visibility
+
+ src/app/api/auth/login/route.ts     |  8 ++++-
+ src/app/api/auth/sso-login/route.ts |  8 ++++-
+ src/app/online-requests/page.tsx    | 61 +++++++++++++++++++++----------------
+ 3 files changed, 48 insertions(+), 29 deletions(-)
+
+commit 24bc1e7a282d109f5dab4472ead27402f8968d32
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Jul 9 15:54:40 2026 +0700
+
+    Perbaikan attendace recap, mandatory detail keperluan, change type loket in layanan publik
+
+ docker-compose.yml                                 |   1 +
+ src/app/admin/attendance-recap/page.tsx            | 416 ++++++++++++++-------
+ src/app/api/admin/attendance/recap/route.ts        |  55 ++-
+ src/app/api/sheets/online-requests/update/route.ts |  40 ++
+ src/app/loket/[id]/page.tsx                        |  45 ++-
+ src/app/online-requests/page.tsx                   |  31 +-
+ 6 files changed, 426 insertions(+), 162 deletions(-)
+
+commit 980af34079f8d5a5babdf9bb50b87529b2361be9
+Merge: 24bc1e7 704833a
+Author: kasiejarkom1500 <kasiejarkom1500@gmail.com>
+Date:   Thu Jul 9 15:56:36 2026 +0700
+
+    Merge branch 'master' of https://github.com/kasiejarkom1500/loket_nextjs

@@ -26,28 +26,43 @@ export async function GET(request: Request) {
     );
   }
 
-  const recap = await getMyRecap(session as MyRecapSession, month);
+  let recap;
+  try {
+    recap = await getMyRecap(session as MyRecapSession, month);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Failed to export personal recap", error);
+    return NextResponse.json({ error: "Gagal memuat rekap." }, { status: 500 });
+  }
   const workbook = XLSX.utils.book_new();
-  const summaryRows = [
+  const summaryRows: Array<Array<string | number>> = [
     ["Nama", recap.user.nama],
     ["NIP Lama", recap.user.nipLama],
     ["Username", recap.user.username],
     ["Role", recap.user.roles.join(" / ")],
     ["Periode", recap.month],
-    ["Total Hari Bertugas", recap.summary.totalHariBertugas],
-    ["Hari Hadir", recap.summary.hariHadir],
-    ["Disiplin (%)", recap.summary.disiplinPersen],
-    ["Status Disiplin", recap.summary.disiplinStatus],
-    ["Total Antrean Selesai", recap.summary.totalAntreanSelesai],
-    ...Object.entries(recap.summary.antreanPerLayanan).map(([name, total]) => [
-      `Antrean - ${name}`,
-      total,
-    ]),
-    ...Object.entries(recap.summary.rincianPekerjaan).map(([name, total]) => [
-      `Rincian - ${name}`,
-      total,
-    ]),
   ];
+  for (const [role, summary] of Object.entries(recap.summary.byRole)) {
+    summaryRows.push(
+      [`Role: ${role}`, ""],
+      ["Total Hari Bertugas", summary.totalHariBertugas],
+      ["Hari Hadir", summary.hariHadir],
+      ["Disiplin (%)", summary.disiplinPersen],
+      ["Status Disiplin", summary.disiplinStatus],
+      ["Total Antrean Selesai", summary.totalAntreanSelesai],
+      ...Object.entries(summary.antreanPerLayanan).map(([name, total]) => [
+        `Antrean - ${name}`,
+        total,
+      ]),
+      ...Object.entries(summary.rincianPekerjaan).map(([name, total]) => [
+        `Rincian - ${name}`,
+        total,
+      ]),
+      ["", ""],
+    );
+  }
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryRows), "Ringkasan");
 
   const attendanceRows = recap.attendance.map((item) => ({
@@ -56,13 +71,15 @@ export async function GET(request: Request) {
     Role: item.role,
     "Jam Datang": item.checkInAt ?? "-",
     "Jam Pulang": item.checkOutAt ?? "-",
-    "Nondata Offline": item.publicNondataOffline ?? item.dataRequestOffline ?? "-",
-    "Nondata Online": item.publicNondataOnline ?? item.dataRequestOnline ?? "-",
-    "Pengaduan Offline": item.publicComplaintsOffline ?? "-",
-    SKD: item.publicSkdCount ?? "-",
-    "Konsultasi Offline": item.dataConsultOffline ?? "-",
-    "Konsultasi Online": item.dataConsultOnline ?? "-",
-    Catatan: item.publicNotes ?? item.dataNotes ?? "",
+    "Nondata Offline": item.role === "LAYANAN_PUBLIK" ? item.publicNondataOffline ?? "-" : "-",
+    "Nondata Online": item.role === "LAYANAN_PUBLIK" ? item.publicNondataOnline ?? "-" : "-",
+    "Pengaduan Offline": item.role === "LAYANAN_PUBLIK" ? item.publicComplaintsOffline ?? "-" : "-",
+    SKD: item.role === "LAYANAN_PUBLIK" ? item.publicSkdCount ?? "-" : "-",
+    "Permintaan Data Offline": item.role === "PERMINTAAN_DATA" ? item.dataRequestOffline ?? "-" : "-",
+    "Permintaan Data Online": item.role === "PERMINTAAN_DATA" ? item.dataRequestOnline ?? "-" : "-",
+    "Konsultasi Offline": item.role === "PERMINTAAN_DATA" ? item.dataConsultOffline ?? "-" : "-",
+    "Konsultasi Online": item.role === "PERMINTAAN_DATA" ? item.dataConsultOnline ?? "-" : "-",
+    Catatan: item.role === "LAYANAN_PUBLIK" ? item.publicNotes ?? "" : item.dataNotes ?? "",
   }));
   XLSX.utils.book_append_sheet(
     workbook,
@@ -73,6 +90,7 @@ export async function GET(request: Request) {
   const queueRows = recap.queues.map((item) => ({
     Tanggal: item.date ?? "-",
     Nomor: item.number,
+    Sebagai: item.role === "LAYANAN_PUBLIK" ? "Layanan Publik" : "Permintaan Data",
     Layanan: item.service,
     Loket: item.counter,
     Pengunjung: item.visitor,

@@ -15,6 +15,8 @@ export type MyRecapSession = Omit<SessionPayload, "role"> & {
   role: "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
 };
 
+type RecapRole = "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+
 export function parseMyRecapMonth(value: string | null): MyRecapMonth | null {
   if (!value || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
     return null;
@@ -118,75 +120,6 @@ export async function getMyRecap(session: MyRecapSession, month: MyRecapMonth) {
     role: assignment.role,
   }));
 
-  const assignmentKeys = assignmentRows.map(
-    (assignment) => `${assignment.date}-${assignment.shift}-${assignment.role}`,
-  );
-  const attendanceByAssignment = new Map(
-    attendanceRows.map((attendance) => [
-      `${attendance.date}-${attendance.shift}-${attendance.role}`,
-      attendance,
-    ]),
-  );
-  const daysPresent = assignmentKeys.filter((key) =>
-    Boolean(attendanceByAssignment.get(key)?.checkInAt),
-  ).length;
-  const onTimeScore = assignmentRows.reduce((total, assignment) => {
-    const attendance = attendanceByAssignment.get(
-      `${assignment.date}-${assignment.shift}-${assignment.role}`,
-    );
-    if (!attendance?.checkInAt || !attendance.shiftStartTime) {
-      return total;
-    }
-    const [hour, minute] = attendance.shiftStartTime.split(":").map(Number);
-    const shiftStart = DateTime.fromISO(assignment.date, { zone: APP_TIMEZONE }).set({
-      hour,
-      minute,
-      second: 0,
-      millisecond: 0,
-    });
-    const checkIn = DateTime.fromISO(attendance.checkInAt).setZone(APP_TIMEZONE);
-    return total + (checkIn.diff(shiftStart, "minutes").minutes <= 30 ? 1 : 0.7);
-  }, 0);
-  const checkoutDays = assignmentKeys.filter((key) =>
-    Boolean(attendanceByAssignment.get(key)?.checkOutAt),
-  ).length;
-  const totalDays = assignmentKeys.length;
-  const presentRate = totalDays ? daysPresent / totalDays : 0;
-  const onTimeRate = totalDays ? onTimeScore / totalDays : 0;
-  const checkoutRate = totalDays ? checkoutDays / totalDays : 0;
-  const discipline = Math.round(
-    (presentRate * 0.5 + onTimeRate * 0.25 + checkoutRate * 0.25) * 100,
-  );
-  const disciplineStatus =
-    discipline >= 90
-      ? "Sangat Baik"
-      : discipline >= 75
-        ? "Baik"
-        : discipline >= 60
-          ? "Cukup"
-          : "Kurang";
-
-  const publicDetails = emptyPublicDetails();
-  const dataDetails = emptyDataDetails();
-  for (const attendance of attendanceRows) {
-    if (session.role === "LAYANAN_PUBLIK") {
-      publicDetails.publicNondataOffline += attendance.publicNondataOffline ?? 0;
-      publicDetails.publicNondataOnline += attendance.publicNondataOnline ?? 0;
-      publicDetails.publicComplaintsOffline += attendance.publicComplaintsOffline ?? 0;
-      publicDetails.publicSkdCount += attendance.publicSkdCount ?? 0;
-    } else {
-      dataDetails.dataRequestOffline += attendance.dataRequestOffline ?? 0;
-      dataDetails.dataConsultOffline += attendance.dataConsultOffline ?? 0;
-      dataDetails.dataRequestOnline += attendance.dataRequestOnline ?? 0;
-      dataDetails.dataConsultOnline += attendance.dataConsultOnline ?? 0;
-    }
-  }
-
-  const antreanPerLayanan = queues.reduce<Record<string, number>>((result, queue) => {
-    result[queue.service.name] = (result[queue.service.name] ?? 0) + 1;
-    return result;
-  }, {});
-
   const queueRows = queues.map((queue) => ({
     id: queue.id,
     role:
@@ -203,27 +136,101 @@ export async function getMyRecap(session: MyRecapSession, month: MyRecapMonth) {
     calledAt: iso(queue.calledAt),
     completedAt: iso(queue.completedAt),
   }));
-  const roles = Array.from(
+  const observedRoles = Array.from(
     new Set([
-      session.role,
       ...attendanceRows.map((attendance) => attendance.role),
       ...assignmentRows.map((assignment) => assignment.role),
       ...queueRows.map((queue) => queue.role),
     ]),
-  );
+  ) as RecapRole[];
 
-  return {
-    user: { ...user, role: session.role, roles },
-    month: month.value,
-    summary: {
+  const buildRoleSummary = (role: RecapRole) => {
+    const roleAssignments = assignmentRows.filter((assignment) => assignment.role === role);
+    const roleAttendances = attendanceRows.filter((attendance) => attendance.role === role);
+    const roleAttendanceByDate = new Map(
+      roleAttendances.map((attendance) => [attendance.date, attendance]),
+    );
+    const roleAssignedDates = roleAssignments.map((assignment) => assignment.date);
+    const daysPresent = roleAssignedDates.filter((date) =>
+      Boolean(roleAttendanceByDate.get(date)?.checkInAt),
+    ).length;
+    const onTimeScore = roleAssignments.reduce((total, assignment) => {
+      const attendance = roleAttendanceByDate.get(assignment.date);
+      if (!attendance?.checkInAt || !attendance.shiftStartTime) {
+        return total;
+      }
+      const [hour, minute] = attendance.shiftStartTime.split(":").map(Number);
+      const shiftStart = DateTime.fromISO(assignment.date, { zone: APP_TIMEZONE }).set({
+        hour,
+        minute,
+        second: 0,
+        millisecond: 0,
+      });
+      const checkIn = DateTime.fromISO(attendance.checkInAt).setZone(APP_TIMEZONE);
+      const minutesLate = Math.round(checkIn.diff(shiftStart, "minutes").minutes);
+      return total + (minutesLate <= 30 ? 1 : 0.7);
+    }, 0);
+    const checkoutDays = roleAssignedDates.filter((date) =>
+      Boolean(roleAttendanceByDate.get(date)?.checkOutAt),
+    ).length;
+    const totalDays = roleAssignments.length;
+    const presentRate = totalDays ? daysPresent / totalDays : 0;
+    const onTimeRate = totalDays ? onTimeScore / totalDays : 0;
+    const checkoutRate = totalDays ? checkoutDays / totalDays : 0;
+    const discipline = Math.round(
+      (presentRate * 0.5 + onTimeRate * 0.25 + checkoutRate * 0.25) * 100,
+    );
+    const disciplineStatus =
+      discipline >= 90
+        ? "Sangat Baik"
+        : discipline >= 75
+          ? "Baik"
+          : discipline >= 60
+            ? "Cukup"
+            : "Kurang";
+    const publicDetails = emptyPublicDetails();
+    const dataDetails = emptyDataDetails();
+    for (const attendance of roleAttendances) {
+      if (attendance.role === "LAYANAN_PUBLIK") {
+        publicDetails.publicNondataOffline += attendance.publicNondataOffline ?? 0;
+        publicDetails.publicNondataOnline += attendance.publicNondataOnline ?? 0;
+        publicDetails.publicComplaintsOffline += attendance.publicComplaintsOffline ?? 0;
+        publicDetails.publicSkdCount += attendance.publicSkdCount ?? 0;
+      } else {
+        dataDetails.dataRequestOffline += attendance.dataRequestOffline ?? 0;
+        dataDetails.dataConsultOffline += attendance.dataConsultOffline ?? 0;
+        dataDetails.dataRequestOnline += attendance.dataRequestOnline ?? 0;
+        dataDetails.dataConsultOnline += attendance.dataConsultOnline ?? 0;
+      }
+    }
+    const roleQueues = queueRows.filter((queue) => queue.role === role);
+    const antreanPerLayanan = roleQueues.reduce<Record<string, number>>((result, queue) => {
+      result[queue.service] = (result[queue.service] ?? 0) + 1;
+      return result;
+    }, {});
+    return {
       totalHariBertugas: totalDays,
       hariHadir: daysPresent,
       disiplinPersen: discipline,
       disiplinStatus: disciplineStatus,
-      totalAntreanSelesai: queues.length,
+      totalAntreanSelesai: roleQueues.length,
       antreanPerLayanan,
       rincianPekerjaan: { ...publicDetails, ...dataDetails },
+    };
+  };
+
+  const byRole = Object.fromEntries(
+    observedRoles.map((role) => [role, buildRoleSummary(role)]),
+  ) as Record<RecapRole, ReturnType<typeof buildRoleSummary>>;
+
+  return {
+    user: {
+      ...user,
+      role: session.role,
+      roles: observedRoles.length ? observedRoles : [session.role],
     },
+    month: month.value,
+    summary: { byRole },
     attendance: attendanceRows,
     assignments: assignmentRows,
     queues: queueRows,

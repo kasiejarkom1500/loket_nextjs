@@ -7,13 +7,15 @@ type Recap = {
   user: { nama: string; nipLama: string; username: string; role: string; roles: string[] };
   month: string;
   summary: {
-    totalHariBertugas: number;
-    hariHadir: number;
-    disiplinPersen: number;
-    disiplinStatus: string;
-    totalAntreanSelesai: number;
-    antreanPerLayanan: Record<string, number>;
-    rincianPekerjaan: Record<string, number>;
+    byRole: Record<string, {
+      totalHariBertugas: number;
+      hariHadir: number;
+      disiplinPersen: number;
+      disiplinStatus: string;
+      totalAntreanSelesai: number;
+      antreanPerLayanan: Record<string, number>;
+      rincianPekerjaan: Record<string, number>;
+    }>;
   };
   attendance: Array<{
     date: string;
@@ -34,6 +36,7 @@ type Recap = {
   }>;
   assignments: Array<{ date: string; shift: "PAGI" | "SIANG"; role: string }>;
   queues: Array<{
+    role: string;
     date: string | null;
     number: string;
     service: string;
@@ -127,9 +130,9 @@ export default function MyRecapPage() {
   const attendanceRows = useMemo(() => {
     if (!recap) return [];
     const rows = new Map<string, { date: string; shift: string; role: string; item: Recap["attendance"][number] | null }>();
-    recap.assignments.forEach((item) => rows.set(`${item.date}-${item.shift}`, { ...item, item: null }));
-    recap.attendance.forEach((item) => rows.set(`${item.date}-${item.shift}`, { ...item, item }));
-    return Array.from(rows.values()).sort((a, b) => `${a.date}-${a.shift}`.localeCompare(`${b.date}-${b.shift}`));
+    recap.assignments.forEach((item) => rows.set(`${item.date}-${item.shift}-${item.role}`, { ...item, item: null }));
+    recap.attendance.forEach((item) => rows.set(`${item.date}-${item.shift}-${item.role}`, { ...item, item }));
+    return Array.from(rows.values()).sort((a, b) => `${a.date}-${a.shift}-${a.role}`.localeCompare(`${b.date}-${b.shift}-${b.role}`));
   }, [recap]);
 
   const downloadExport = async () => {
@@ -175,23 +178,28 @@ export default function MyRecapPage() {
               </div>
             </section>
 
-            <section className="grid gap-4 sm:grid-cols-4 print:gap-2">
-              {[
-                ["Hari bertugas", recap.summary.totalHariBertugas],
-                ["Hari hadir", recap.summary.hariHadir],
-                ["Disiplin", `${recap.summary.disiplinPersen}% · ${recap.summary.disiplinStatus}`],
-                ["Antrean selesai", recap.summary.totalAntreanSelesai],
-              ].map(([label, value]) => <div key={String(label)} className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm print:rounded-none print:p-2 print:shadow-none"><p className="text-xs uppercase tracking-[0.15em] text-zinc-400">{label}</p><p className="mt-3 text-2xl font-bold text-zinc-900 print:mt-1 print:text-base">{value}</p></div>)}
-            </section>
+            {Object.entries(recap.summary.byRole).map(([role, summary]) => (
+              <section key={role} className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm print:rounded-none print:border-0 print:p-2 print:shadow-none">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">{roleLabel([role])}</h2>
+                <div className="mt-3 grid gap-4 sm:grid-cols-4 print:gap-2">
+                  {[
+                    ["Hari bertugas", summary.totalHariBertugas],
+                    ["Hari hadir", summary.hariHadir],
+                    ["Disiplin", `${summary.disiplinPersen}% · ${summary.disiplinStatus}`],
+                    ["Antrean selesai", summary.totalAntreanSelesai],
+                  ].map(([label, value]) => <div key={String(label)} className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm print:rounded-none print:p-2 print:shadow-none"><p className="text-xs uppercase tracking-[0.15em] text-zinc-400">{label}</p><p className="mt-3 text-2xl font-bold text-zinc-900 print:mt-1 print:text-base">{value}</p></div>)}
+                </div>
+              </section>
+            ))}
 
             <section className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-sm print:rounded-none print:border-0 print:p-2 print:shadow-none">
               <h2 className="text-lg font-semibold text-zinc-900">Presensi Harian</h2>
-              {attendanceRows.length === 0 ? <p className="mt-4 text-sm text-zinc-500">Tidak ada penugasan atau presensi pada bulan ini.</p> : <div className="mt-4 overflow-x-auto print:overflow-visible"><table className="w-full min-w-[900px] table-auto text-left text-sm print:min-w-0 print:table-fixed print:text-[8px]"><thead className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400 print:text-[7px]"><tr><th className="px-3 py-3 print:w-[14%] print:px-1 print:py-1">Tanggal</th><th className="px-3 py-3 print:w-[9%] print:px-1 print:py-1">Shift</th><th className="px-3 py-3 print:w-[18%] print:px-1 print:py-1">Datang</th><th className="px-3 py-3 print:w-[18%] print:px-1 print:py-1">Pulang</th><th className="px-3 py-3 print:w-[41%] print:px-1 print:py-1">Rincian pekerjaan</th></tr></thead><tbody>{attendanceRows.map((row) => <tr key={`${row.date}-${row.shift}`} className="border-b border-zinc-100"><td className="px-3 py-3 print:px-1 print:py-1">{formatDate(row.date)}</td><td className="px-3 py-3 print:px-1 print:py-1">{row.shift}</td><td className="px-3 py-3 print:px-1 print:py-1">{formatDateTime(row.item?.checkInAt ?? null)}</td><td className="px-3 py-3 print:px-1 print:py-1">{formatDateTime(row.item?.checkOutAt ?? null)}</td><td className="max-w-[520px] break-words px-3 py-3 text-zinc-500 print:max-w-none print:whitespace-normal print:px-1 print:py-1">{workDetails(row.item, row.item?.role ?? row.role)}{row.item?.publicNotes || row.item?.dataNotes ? <span className="block italic">{row.item.publicNotes || row.item.dataNotes}</span> : null}</td></tr>)}</tbody></table></div>}
+              {attendanceRows.length === 0 ? <p className="mt-4 text-sm text-zinc-500">Tidak ada penugasan atau presensi pada bulan ini.</p> : <div className="mt-4 overflow-x-auto print:overflow-visible"><table className="w-full min-w-[900px] table-auto text-left text-sm print:min-w-0 print:table-fixed print:text-[8px]"><thead className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400 print:text-[7px]"><tr><th className="px-3 py-3 print:w-[13%] print:px-1 print:py-1">Tanggal</th><th className="px-3 py-3 print:w-[9%] print:px-1 print:py-1">Shift</th><th className="px-3 py-3 print:w-[15%] print:px-1 print:py-1">Role</th><th className="px-3 py-3 print:w-[16%] print:px-1 print:py-1">Datang</th><th className="px-3 py-3 print:w-[16%] print:px-1 print:py-1">Pulang</th><th className="px-3 py-3 print:w-[31%] print:px-1 print:py-1">Rincian pekerjaan</th></tr></thead><tbody>{attendanceRows.map((row) => <tr key={`${row.date}-${row.shift}-${row.role}`} className="border-b border-zinc-100"><td className="px-3 py-3 print:px-1 print:py-1">{formatDate(row.date)}</td><td className="px-3 py-3 print:px-1 print:py-1">{row.shift}</td><td className="px-3 py-3 print:px-1 print:py-1">{roleLabel([row.role])}</td><td className="px-3 py-3 print:px-1 print:py-1">{formatDateTime(row.item?.checkInAt ?? null)}</td><td className="px-3 py-3 print:px-1 print:py-1">{formatDateTime(row.item?.checkOutAt ?? null)}</td><td className="max-w-[520px] break-words px-3 py-3 text-zinc-500 print:max-w-none print:whitespace-normal print:px-1 print:py-1">{workDetails(row.item, row.item?.role ?? row.role)}{row.item?.publicNotes || row.item?.dataNotes ? <span className="block italic">{row.item.publicNotes || row.item.dataNotes}</span> : null}</td></tr>)}</tbody></table></div>}
             </section>
 
             <section className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-sm print:rounded-none print:border-0 print:p-2 print:shadow-none">
               <h2 className="text-lg font-semibold text-zinc-900">Antrean Dilayani</h2>
-              {recap.queues.length === 0 ? <p className="mt-4 text-sm text-zinc-500">Tidak ada antrean selesai pada bulan ini.</p> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400"><tr><th className="px-3 py-3">Tanggal</th><th className="px-3 py-3">Nomor</th><th className="px-3 py-3">Layanan</th><th className="px-3 py-3">Loket</th><th className="px-3 py-3">Pengunjung</th><th className="px-3 py-3">Keperluan</th><th className="px-3 py-3">Dipanggil</th><th className="px-3 py-3">Selesai</th></tr></thead><tbody>{recap.queues.map((queue) => <tr key={`${queue.number}-${queue.completedAt}`} className="border-b border-zinc-100"><td className="px-3 py-3">{formatDate(queue.date)}</td><td className="px-3 py-3 font-semibold">{queue.number}</td><td className="px-3 py-3">{queue.service}</td><td className="px-3 py-3">{queue.counter}</td><td className="px-3 py-3">{queue.visitor}</td><td className="max-w-[260px] px-3 py-3">{[queue.purpose, queue.staffPurposeDetail].filter(Boolean).join(" · ") || "-"}</td><td className="px-3 py-3">{formatDateTime(queue.calledAt)}</td><td className="px-3 py-3">{formatDateTime(queue.completedAt)}</td></tr>)}</tbody></table></div>}
+              {recap.queues.length === 0 ? <p className="mt-4 text-sm text-zinc-500">Tidak ada antrean selesai pada bulan ini.</p> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="border-b border-zinc-200 text-xs uppercase tracking-wider text-zinc-400"><tr><th className="px-3 py-3">Tanggal</th><th className="px-3 py-3">Nomor</th><th className="px-3 py-3">Sebagai</th><th className="px-3 py-3">Layanan</th><th className="px-3 py-3">Loket</th><th className="px-3 py-3">Pengunjung</th><th className="px-3 py-3">Keperluan</th><th className="px-3 py-3">Dipanggil</th><th className="px-3 py-3">Selesai</th></tr></thead><tbody>{recap.queues.map((queue) => <tr key={`${queue.number}-${queue.completedAt}`} className="border-b border-zinc-100"><td className="px-3 py-3">{formatDate(queue.date)}</td><td className="px-3 py-3 font-semibold">{queue.number}</td><td className="px-3 py-3">{roleLabel([queue.role])}</td><td className="px-3 py-3">{queue.service}</td><td className="px-3 py-3">{queue.counter}</td><td className="px-3 py-3">{queue.visitor}</td><td className="max-w-[260px] px-3 py-3">{[queue.purpose, queue.staffPurposeDetail].filter(Boolean).join(" · ") || "-"}</td><td className="px-3 py-3">{formatDateTime(queue.calledAt)}</td><td className="px-3 py-3">{formatDateTime(queue.completedAt)}</td></tr>)}</tbody></table></div>}
             </section>
           </>
         ) : null}

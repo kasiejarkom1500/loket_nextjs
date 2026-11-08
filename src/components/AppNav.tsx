@@ -7,7 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 type Profile = {
   nama: string;
   username: string;
-  role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+  role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
   counterId?: number | null;
   isSubstitute?: boolean;
 };
@@ -48,12 +48,14 @@ function getInitials(name: string) {
 }
 
 const ROLE_GRADIENT: Record<string, string> = {
+  "null": "from-zinc-500 to-zinc-700",
   ADMIN: "from-blue-500 to-indigo-600",
   LAYANAN_PUBLIK: "from-amber-500 to-orange-600",
   PERMINTAAN_DATA: "from-emerald-500 to-teal-600",
 };
 
 const ROLE_LABEL: Record<string, string> = {
+  "null": "Tanpa Penugasan",
   ADMIN: "Administrator",
   LAYANAN_PUBLIK: "Layanan Publik",
   PERMINTAAN_DATA: "Permintaan Data",
@@ -89,8 +91,8 @@ function AppNavInner() {
 
   if (!profile) return null;
 
-  const gradient = ROLE_GRADIENT[profile.role] ?? "from-zinc-500 to-zinc-700";
-  const roleLabel = ROLE_LABEL[profile.role] ?? profile.role;
+  const gradient = ROLE_GRADIENT[String(profile.role)] ?? "from-zinc-500 to-zinc-700";
+  const roleLabel = ROLE_LABEL[String(profile.role)] ?? profile.role ?? "Tanpa Penugasan";
 
   // Build nav items based on role
   let navItems: NavItem[];
@@ -129,6 +131,11 @@ function AppNavInner() {
         label: "Akun",
         icon: "👤",
       },
+    ];
+  } else if (profile.role === null) {
+    navItems = [
+      { href: "/rekap-saya", label: "Rekap Saya", icon: "📊" },
+      { href: "/profile", label: "Akun", icon: "👤" },
     ];
   } else {
     navItems = DATA_OFFICER_NAV;

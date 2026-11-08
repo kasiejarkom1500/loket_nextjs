@@ -61,7 +61,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/online-requests") || pathname.startsWith("/api/sheets")) {
     const session = await getSession(request);
-    if (!session) {
+    if (!session || session.role === null) {
       if (pathname.startsWith("/api/sheets")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/whatsapp") || pathname.startsWith("/api/whatsapp")) {
     const session = await getSession(request);
-    if (!session) {
+    if (!session || session.role === null) {
       if (pathname.startsWith("/api/whatsapp")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -104,12 +104,6 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
-    }
-    if (session.role !== "LAYANAN_PUBLIK" && session.role !== "PERMINTAAN_DATA") {
-      if (pathname.startsWith("/api/my-recap")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 

@@ -196,6 +196,12 @@ const ROLE_META: Record<
     gradient: "from-blue-600 to-indigo-700",
     badge: "bg-blue-100 text-blue-800",
   },
+  "null": {
+    label: "Tanpa Penugasan",
+    subtitle: "Tidak ada penugasan hari ini — menu operasional tidak aktif.",
+    gradient: "from-zinc-500 to-zinc-700",
+    badge: "bg-zinc-100 text-zinc-800",
+  },
   LAYANAN_PUBLIK: {
     label: "Petugas Layanan Publik",
     subtitle: "Akses dashboard loket dan presensi shift Anda.",
@@ -391,6 +397,11 @@ export default function HomePage() {
       }
       return item;
     });
+  } else if (profile.role === null) {
+    menuItems = [
+      { title: "Rekap Saya", desc: "Lihat rekap aktivitas dan presensi Anda.", href: "/rekap-saya", icon: "📊", color: "from-blue-500 to-indigo-600", accent: "bg-blue-50 border-blue-200 hover:border-blue-300" },
+      { title: "Akun", desc: "Kelola informasi akun Anda.", href: "/profile", icon: "👤", color: "from-zinc-500 to-zinc-700", accent: "bg-zinc-50 border-zinc-200 hover:border-zinc-300" },
+    ];
   } else {
     menuItems = DATA_OFFICER_MENU;
   }

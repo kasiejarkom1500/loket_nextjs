@@ -74,7 +74,7 @@ function LoginForm() {
 
     const data = (await response.json()) as {
       counterId: number | null;
-      role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+      role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
       mode: "admin" | "staff";
     };
     const redirect = searchParams.get("redirect");
@@ -115,7 +115,7 @@ function LoginForm() {
 
     const data = (await response.json()) as {
       counterId: number | null;
-      role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+      role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
       mode: "admin" | "staff";
     };
 

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  let role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" = "ADMIN";
+  let role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null = "ADMIN";
   let shift: "PAGI" | "SIANG" | null = null;
   let assignmentId: number | null = null;
   let counterId: number | null = null;
@@ -103,10 +103,10 @@ export async function POST(request: Request) {
           counterId = counter.id;
         }
       } else {
-        return NextResponse.json(
-          { error: "Tidak ada penugasan aktif untuk shift ini." },
-          { status: 403 },
-        );
+        role = null;
+        shift = null;
+        assignmentId = null;
+        counterId = null;
       }
     } else {
       role = assignment.role;

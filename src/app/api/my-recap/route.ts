@@ -10,7 +10,7 @@ async function getAllowedSession() {
   if (!token) return null;
   try {
     const session = await verifySession(token);
-    if (session.role !== "LAYANAN_PUBLIK" && session.role !== "PERMINTAAN_DATA") {
+    if (session.role === "ADMIN") {
       return null;
     }
     return session;

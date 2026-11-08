@@ -5,7 +5,7 @@ export type SessionPayload = {
   counterId: number | null;
   nama: string;
   username: string;
-  role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+  role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
   shift: "PAGI" | "SIANG" | null;
   assignmentId: number | null;
   isAdmin: boolean;

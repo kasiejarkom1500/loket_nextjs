@@ -12,7 +12,7 @@ export type MyRecapMonth = {
 };
 
 export type MyRecapSession = Omit<SessionPayload, "role"> & {
-  role: "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+  role: "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
 };
 
 type RecapRole = "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";

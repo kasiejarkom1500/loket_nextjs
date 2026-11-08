@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   } catch {
     session = null;
   }
-  if (!session || (session.role !== "LAYANAN_PUBLIK" && session.role !== "PERMINTAAN_DATA")) {
+  if (!session || session.role === "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -105,7 +105,7 @@ export default function LoketPage() {
     [],
   );
   const [dataOfficers, setDataOfficers] = useState<
-    Array<{ id: number; nama: string }>
+    Array<{ id: number; nama: string; isSubstituteEligible?: boolean }>
   >([]);
   const [securityOfficers, setSecurityOfficers] = useState<
     Array<{ id: number; name: string }>
@@ -128,6 +128,7 @@ export default function LoketPage() {
   const [attendanceMeta, setAttendanceMeta] = useState<AttendanceMeta | null>(
     null,
   );
+  const [isSubstitute, setIsSubstitute] = useState(false);
   const [showDefaults, setShowDefaults] = useState(false);
   const [showOfficerDetail, setShowOfficerDetail] = useState(true);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
@@ -215,6 +216,7 @@ export default function LoketPage() {
     const data = await response.json();
     setAttendance(data.attendance ?? null);
     setAttendanceMeta(data.meta ?? null);
+    setIsSubstitute(Boolean(data.isSubstitute));
   }, []);
 
   useEffect(() => {
@@ -655,7 +657,7 @@ export default function LoketPage() {
                           <option value="">Pilih Petugas Data</option>
                           {dataOfficers.map((officer) => (
                             <option key={officer.id} value={officer.id}>
-                              {officer.nama}
+                              {officer.nama}{officer.isSubstituteEligible ? " (Pengganti)" : ""}
                             </option>
                           ))}
                         </select>
@@ -904,7 +906,7 @@ export default function LoketPage() {
                                 <option value="">Petugas Data</option>
                                 {dataOfficers.map((officer) => (
                                   <option key={officer.id} value={officer.id}>
-                                    {officer.nama}
+                                    {officer.nama}{officer.isSubstituteEligible ? " (Pengganti)" : ""}
                                   </option>
                                 ))}
                               </>
@@ -957,7 +959,9 @@ export default function LoketPage() {
         ) : null}
 
         {activeTab === "attendance" ? (
-          <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
+          isSubstitute ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">Anda login sebagai pengganti — presensi tidak diperlukan.</div>
+          ) : <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
             <div className="flex flex-col gap-5">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">

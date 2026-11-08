@@ -9,6 +9,7 @@ type Profile = {
   username: string;
   role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
   counterId?: number | null;
+  isSubstitute?: boolean;
 };
 
 type NavItem = {
@@ -75,6 +76,7 @@ function AppNavInner() {
       setProfile({
         ...(data.user ?? {}),
         counterId: data.counterId ?? data.user?.counterId ?? null,
+        isSubstitute: data.user?.isSubstitute ?? false,
       });
     };
     load();
@@ -152,7 +154,7 @@ function AppNavInner() {
 
           {/* Role badge */}
           <div className={`hidden sm:flex items-center gap-1.5 rounded-xl bg-gradient-to-r ${gradient} px-3 py-2`}>
-            <span className="text-xs font-bold text-white">{roleLabel}</span>
+            <span className="text-xs font-bold text-white">{roleLabel}{profile.isSubstitute ? " · Pengganti" : ""}</span>
           </div>
         </div>
 

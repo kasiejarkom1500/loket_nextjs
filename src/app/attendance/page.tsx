@@ -65,6 +65,7 @@ export default function AttendancePage() {
   );
   const [loading, setLoading] = useState(false);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [isSubstitute, setIsSubstitute] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [form, setForm] = useState({
     dataRequestOffline: "",
@@ -82,6 +83,7 @@ export default function AttendancePage() {
     const data = await response.json();
     setAttendance(data.attendance ?? null);
     setAttendanceMeta(data.meta ?? null);
+    setIsSubstitute(Boolean(data.isSubstitute));
   }, []);
 
   useEffect(() => {
@@ -150,7 +152,7 @@ export default function AttendancePage() {
           </p>
         </header>
 
-        <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
+        {isSubstitute ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">Anda login sebagai pengganti — presensi tidak diperlukan.</div> : <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
           <div className="flex flex-col gap-5">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -196,7 +198,7 @@ export default function AttendancePage() {
               </button>
             </div>
           </div>
-        </section>
+        </section>}
         {status ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
             {status}

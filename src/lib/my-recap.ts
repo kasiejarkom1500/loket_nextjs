@@ -212,7 +212,7 @@ export async function getMyRecap(session: MyRecapSession, month: MyRecapMonth) {
       totalHariBertugas: totalDays,
       hariHadir: daysPresent,
       disiplinPersen: discipline,
-      disiplinStatus: disciplineStatus,
+      disiplinStatus: totalDays === 0 ? "Tanpa Penugasan" : disciplineStatus,
       totalAntreanSelesai: roleQueues.length,
       antreanPerLayanan,
       rincianPekerjaan: { ...publicDetails, ...dataDetails },

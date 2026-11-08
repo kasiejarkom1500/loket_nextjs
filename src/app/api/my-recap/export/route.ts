@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       [`Role: ${role}`, ""],
       ["Total Hari Bertugas", summary.totalHariBertugas],
       ["Hari Hadir", summary.hariHadir],
-      ["Disiplin (%)", summary.disiplinPersen],
+      ["Disiplin (%)", summary.totalHariBertugas === 0 ? "Tanpa Penugasan" : summary.disiplinPersen],
       ["Status Disiplin", summary.disiplinStatus],
       ["Total Antrean Selesai", summary.totalAntreanSelesai],
       ...Object.entries(summary.antreanPerLayanan).map(([name, total]) => [

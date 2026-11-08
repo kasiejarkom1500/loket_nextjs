@@ -30,6 +30,10 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
+  const [substituteChoice, setSubstituteChoice] = useState(false);
+  const [substituteRole, setSubstituteRole] = useState<"LAYANAN_PUBLIK" | "PERMINTAAN_DATA">("LAYANAN_PUBLIK");
+  const [counters, setCounters] = useState<{ id: number; name: string }[]>([]);
+  const [substituteCounterId, setSubstituteCounterId] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -39,14 +43,32 @@ function LoginForm() {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, mode }),
+      body: JSON.stringify({
+        username,
+        password,
+        mode,
+        ...(substituteChoice
+          ? {
+              substituteRole,
+              ...(substituteRole === "LAYANAN_PUBLIK"
+                ? { counterId: Number(substituteCounterId) }
+                : {}),
+            }
+          : {}),
+      }),
     });
 
     setLoading(false);
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setError(data.error ?? "Login gagal");
+      if (data.needsSubstituteChoice) {
+        setSubstituteChoice(true);
+        setCounters(data.counters ?? []);
+        setError(null);
+      } else {
+        setError(data.error ?? "Login gagal");
+      }
       return;
     }
 
@@ -56,7 +78,7 @@ function LoginForm() {
       mode: "admin" | "staff";
     };
     const redirect = searchParams.get("redirect");
-    if (redirect) {
+    if (redirect && !substituteChoice) {
       router.replace(redirect);
       return;
     }
@@ -294,6 +316,23 @@ function LoginForm() {
               </div>
             </div>
 
+            {substituteChoice ? (
+              <div style={{ marginBottom: 20, padding: 16, border: "1px solid #f59e0b", borderRadius: 12, background: "#fffbeb", display: "grid", gap: 10 }}>
+                <strong>Mode Pengganti</strong>
+                <label>Role pengganti
+                  <select value={substituteRole} onChange={(event) => setSubstituteRole(event.target.value as typeof substituteRole)} style={{ ...inputStyle, padding: "10px 12px", marginTop: 4 }}>
+                    <option value="LAYANAN_PUBLIK">Layanan Publik</option>
+                    <option value="PERMINTAAN_DATA">Permintaan Data</option>
+                  </select>
+                </label>
+                {substituteRole === "LAYANAN_PUBLIK" ? <label>Loket
+                  <select value={substituteCounterId} onChange={(event) => setSubstituteCounterId(event.target.value)} style={{ ...inputStyle, padding: "10px 12px", marginTop: 4 }}>
+                    <option value="">Pilih loket</option>
+                    {counters.map((counter) => <option key={counter.id} value={counter.id}>{counter.name}</option>)}
+                  </select>
+                </label> : null}
+              </div>
+            ) : null}
             {/* error */}
             {error ? (
               <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderRadius: 12, background: "#fff1f2", padding: "12px 16px", fontSize: 13, color: "#e11d48" }}>

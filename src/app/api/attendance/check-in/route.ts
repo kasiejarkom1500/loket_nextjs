@@ -16,6 +16,10 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.isSubstitute) {
+    return NextResponse.json({ error: "Mode pengganti tidak perlu presensi." }, { status: 403 });
+  }
+
   if (
     session.role !== "LAYANAN_PUBLIK" &&
     session.role !== "PERMINTAAN_DATA"

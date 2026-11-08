@@ -9,6 +9,7 @@ export type SessionPayload = {
   shift: "PAGI" | "SIANG" | null;
   assignmentId: number | null;
   isAdmin: boolean;
+  isSubstitute?: boolean;
 };
 
 const getSecret = () => {

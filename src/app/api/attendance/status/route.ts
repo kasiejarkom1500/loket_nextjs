@@ -42,6 +42,11 @@ export async function GET() {
   }
 
   const shift = session.shift ?? (await getCurrentShift());
+  if (session.isSubstitute) {
+    const shiftSettings = await getShiftSettings();
+    const shiftSetting = shiftSettings.find((item) => item.shift === shift);
+    return NextResponse.json({ attendance: null, isSubstitute: true, role: session.role, shift, meta: { shift, startTime: shiftSetting?.startTime ?? null, endTime: shiftSetting?.endTime ?? null, lateMinutes: 0 } });
+  }
   const { start, end } = getTodayRange();
   const shiftSettings = await getShiftSettings();
   const shiftSetting = shiftSettings.find((item) => item.shift === shift);

@@ -15,6 +15,7 @@ export async function GET() {
         username: session.username,
         role: session.role,
         counterId: session.counterId,
+        isSubstitute: session.isSubstitute ?? false,
       },
       counterId: session.counterId,
     });

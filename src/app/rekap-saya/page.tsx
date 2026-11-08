@@ -185,7 +185,7 @@ export default function MyRecapPage() {
                   {[
                     ["Hari bertugas", summary.totalHariBertugas],
                     ["Hari hadir", summary.hariHadir],
-                    ["Disiplin", `${summary.disiplinPersen}% · ${summary.disiplinStatus}`],
+                    ["Disiplin", summary.totalHariBertugas === 0 ? "Tanpa Penugasan" : `${summary.disiplinPersen}% · ${summary.disiplinStatus}`],
                     ["Antrean selesai", summary.totalAntreanSelesai],
                   ].map(([label, value]) => <div key={String(label)} className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm print:rounded-none print:p-2 print:shadow-none"><p className="text-xs uppercase tracking-[0.15em] text-zinc-400">{label}</p><p className="mt-3 text-2xl font-bold text-zinc-900 print:mt-1 print:text-base">{value}</p></div>)}
                 </div>

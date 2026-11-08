@@ -42,6 +42,7 @@ export async function POST(request: Request) {
   let shift: "PAGI" | "SIANG" | null = null;
   let assignmentId: number | null = null;
   let counterId: number | null = null;
+  let isSubstitute = false;
 
   if (mode === "admin") {
     if (!user.isAdmin) {
@@ -86,15 +87,20 @@ export async function POST(request: Request) {
 
     if (!assignment) {
       if (user.isAdmin) {
-        role = "LAYANAN_PUBLIK";
+        const substituteRole = body?.substituteRole;
+        if (substituteRole !== "LAYANAN_PUBLIK" && substituteRole !== "PERMINTAAN_DATA") {
+          const counters = await prisma.counter.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+          return NextResponse.json({ error: "Pilih mode pengganti.", needsSubstituteChoice: true, roles: ["LAYANAN_PUBLIK", "PERMINTAAN_DATA"], counters }, { status: 400 });
+        }
+        role = substituteRole;
         shift = currentShift;
         assignmentId = null;
-        counterId = user.counterId ?? null;
-        if (!counterId) {
-          return NextResponse.json(
-            { error: "Admin belum memiliki loket default di master user." },
-            { status: 400 },
-          );
+        isSubstitute = true;
+        if (role === "LAYANAN_PUBLIK") {
+          const requestedCounterId = Number(body?.counterId);
+          const counter = Number.isInteger(requestedCounterId) ? await prisma.counter.findUnique({ where: { id: requestedCounterId }, select: { id: true } }) : null;
+          if (!counter) return NextResponse.json({ error: "Loket tidak valid." }, { status: 400 });
+          counterId = counter.id;
         }
       } else {
         return NextResponse.json(
@@ -127,6 +133,7 @@ export async function POST(request: Request) {
       shift,
       assignmentId,
       isAdmin: user.isAdmin,
+      ...(isSubstitute ? { isSubstitute: true } : {}),
     },
     SESSION_SECONDS,
   );

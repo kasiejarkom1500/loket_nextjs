@@ -2,7 +2,7 @@ services:
   db:
     profiles: ["localdb"]
     image: mysql:8.4
-    command: --default-authentication-plugin=mysql_native_password
+    # command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_DATABASE: antrian_db
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"

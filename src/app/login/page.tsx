@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 /* ── small reusable SVG icon ── */
@@ -20,7 +20,16 @@ function Icon({ d, size = 20, stroke = false, color }: { d: string; size?: numbe
   );
 }
 
+const subscribeToHydration = () => () => undefined;
+const getHydratedSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 function LoginForm() {
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerSnapshot,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
@@ -231,7 +240,7 @@ function LoginForm() {
           </header>
 
           {/* ── form card ── */}
-          <form
+          {hydrated ? <form
             onSubmit={handleSubmit}
             className="login-card"
             style={{
@@ -423,7 +432,7 @@ function LoginForm() {
                 </>
               )}
             </button>
-          </form>
+          </form> : <div aria-hidden="true" style={{ minHeight: 440 }} />}
 
           {/* footer */}
           <p style={{ textAlign: "center", fontSize: 12, color: "#a1a1aa" }}>

@@ -42,15 +42,15 @@ export async function GET() {
   let shiftEnd = baseDate.set({ hour: end.hour, minute: end.minute, second: 59, millisecond: 999 });
   if (shiftEnd <= shiftStart) shiftEnd = shiftEnd.plus({ days: 1 });
 
-  const officerField = session.role === "LAYANAN_PUBLIK" ? "publicOfficerId" : "dataOfficerId";
-  const codes = session.role === "LAYANAN_PUBLIK" ? ["A", "C"] : ["B"];
+  const isPublicOfficer = session.role === "LAYANAN_PUBLIK";
+  const officerField = isPublicOfficer ? "publicOfficerId" : "dataOfficerId";
   const rows = await prisma.queue.groupBy({
     by: ["serviceId"],
     where: {
       status: "COMPLETED",
       completedAt: { gte: shiftStart.toJSDate(), lte: shiftEnd.toJSDate() },
       [officerField]: session.userId,
-      service: { code: { in: codes } },
+      ...(isPublicOfficer ? {} : { service: { code: "B" } }),
     },
     _count: { _all: true },
   });
@@ -65,7 +65,7 @@ export async function GET() {
   const detail = perService.map((item) => `${item.name} ${item.count}`).join(" · ");
   const note = total === 0
     ? "Tidak ada antrean selesai hari ini — isi manual bila ada tamu yang dilayani tanpa ambil nomor antrean."
-    : `Otomatis dari antrean: ${total} selesai hari ini${detail ? ` (${detail})` : ""}. Angka dimasukkan ke kolom kunjungan langsung pertama — pindahkan sebagian ke kolom ${session.role === "LAYANAN_PUBLIK" ? "Pengaduan" : "Konsultasi"} bila ada, dan isi ${session.role === "LAYANAN_PUBLIK" ? "Online + SKD" : "Online"} secara manual.`;
+    : `Otomatis dari antrean: ${total} selesai hari ini${detail ? ` (${detail})` : ""}.${isPublicOfficer ? " Termasuk antrean permintaan data yang kamu panggil dan tutup." : ""} Angka dimasukkan ke kolom kunjungan langsung pertama — pindahkan sebagian ke kolom ${isPublicOfficer ? "Pengaduan" : "Konsultasi"} bila ada, dan isi ${isPublicOfficer ? "Online + SKD" : "Online"} secara manual.`;
 
   return NextResponse.json({ role: session.role, shift, date: DateTime.fromJSDate(date).setZone(APP_TIMEZONE).toISODate(), total, perService, note });
 }

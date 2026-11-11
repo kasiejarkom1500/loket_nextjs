@@ -74,6 +74,27 @@ export default function AttendancePage() {
     dataConsultOnline: "",
     dataNotes: "",
   });
+  const [suggestion, setSuggestion] = useState<{ total: number; perService: Array<{ code: string; name: string; count: number }>; note: string } | null>(null);
+  const [suggestionRequested, setSuggestionRequested] = useState(false);
+
+  const openCheckout = () => {
+    if (attendance?.checkOutAt) return;
+    setAttendanceOpen(true);
+    if (suggestionRequested) return;
+    setSuggestionRequested(true);
+    fetch("/api/attendance/checkout-suggestion")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setSuggestion(data);
+        setForm((previous) => ({
+          ...previous,
+          dataRequestOffline: previous.dataRequestOffline || String(data.total),
+          dataConsultOffline: previous.dataConsultOffline || "0",
+        }));
+      })
+      .catch(() => undefined);
+  };
 
   const loadAttendance = useCallback(async () => {
     const response = await fetch("/api/attendance/status");
@@ -191,7 +212,7 @@ export default function AttendancePage() {
               </button>
               <button
                 type="button"
-                onClick={() => setAttendanceOpen(true)}
+                onClick={openCheckout}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
               >
                 Presensi Pulang
@@ -226,6 +247,7 @@ export default function AttendancePage() {
               </button>
             </div>
             <div className="px-8 py-6">
+              {suggestion ? <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{suggestion.note}</p> : null}
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">

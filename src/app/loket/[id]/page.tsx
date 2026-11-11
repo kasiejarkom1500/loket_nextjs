@@ -140,6 +140,27 @@ export default function LoketPage() {
     publicSkdCount: "",
     publicNotes: "",
   });
+  const [checkoutSuggestion, setCheckoutSuggestion] = useState<{ total: number; perService: Array<{ code: string; name: string; count: number }>; note: string } | null>(null);
+  const [checkoutSuggestionRequested, setCheckoutSuggestionRequested] = useState(false);
+
+  const openAttendanceCheckout = () => {
+    if (attendance?.checkOutAt) return;
+    setAttendanceOpen(true);
+    if (checkoutSuggestionRequested) return;
+    setCheckoutSuggestionRequested(true);
+    fetch("/api/attendance/checkout-suggestion")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setCheckoutSuggestion(data);
+        setPublicCheckout((previous) => ({
+          ...previous,
+          publicNondataOffline: previous.publicNondataOffline || String(data.total),
+          publicComplaintsOffline: previous.publicComplaintsOffline || "0",
+        }));
+      })
+      .catch(() => undefined);
+  };
   const [staffNote, setStaffNote] = useState("");
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") === "attendance" ? "attendance" : "queue") as "queue" | "attendance";
@@ -1006,7 +1027,7 @@ export default function LoketPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAttendanceOpen(true)}
+                  onClick={openAttendanceCheckout}
                   className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 bg-white px-5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
                 >
                   Presensi Pulang
@@ -1042,10 +1063,11 @@ export default function LoketPage() {
               </button>
             </div>
             <div className="px-8 py-6">
+              {checkoutSuggestion ? <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{checkoutSuggestion.note}</p> : null}
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                    Permintaan informasi publik (nondata) kunjungan langsung
+                    Permintaan kunjungan langsung (non-data + data)
                   </label>
                   <input
                     type="number"

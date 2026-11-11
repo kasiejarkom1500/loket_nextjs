@@ -147,20 +147,59 @@ export default function MyRecapPage() {
     URL.revokeObjectURL(url);
   };
 
+  const monthLabel = (() => {
+    const [y, m] = month.split("-");
+    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  })();
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe,transparent_60%),linear-gradient(120deg,#fff7ed,#f8fafc)] px-6 py-10 print:bg-white print:px-0 print:py-0">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 print:gap-3">
-        <div className="print:hidden"><AppNav /></div>
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe,transparent_60%),linear-gradient(120deg,#fff7ed,#f8fafc)] px-6 py-10 print:bg-white print:p-0">
+      <style>{`
+        @page { size: A4 landscape; margin: 1.2cm 1.5cm; }
+        @media print {
+          body { background: white !important; color: #111 !important; }
+          .no-print { display: none !important; }
+          .print-header { display: block !important; }
+          table { border-collapse: collapse; width: 100%; }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
+          th, td { border: 1px solid #d1d5db; padding: 3px 5px; font-size: 7.5pt; vertical-align: top; }
+          th { background: #f3f4f6 !important; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
+          .tbl-num { text-align: right; }
+          .tbl-center { text-align: center; }
+          .badge-hadir { background: #d1fae5 !important; color: #065f46 !important; border-radius: 4px; padding: 1px 4px; }
+          .badge-absen { background: #fee2e2 !important; color: #991b1b !important; border-radius: 4px; padding: 1px 4px; }
+          .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4b5563; border-bottom: 2px solid #e5e7eb; padding-bottom: 3px; margin: 10px 0 5px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+          .summary-box { border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px; }
+          .summary-box p:first-child { font-size: 7pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; }
+          .summary-box p:last-child { font-size: 13pt; font-weight: 800; color: #111827; margin-top: 2px; }
+          .print-identity { display: flex; gap: 40px; font-size: 8.5pt; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 14px; background: #f9fafb !important; }
+          .print-identity dl { display: grid; grid-template-columns: 90px 1fr; gap: 2px 8px; }
+          .print-identity dt { color: #6b7280; }
+          .print-identity dd { font-weight: 700; color: #111; }
+          .print-letterhead { text-align: center; border-bottom: 3px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+          .print-letterhead h1 { font-size: 13pt; font-weight: 800; letter-spacing: 0.01em; }
+          .print-letterhead h2 { font-size: 10pt; font-weight: 400; margin-top: 2px; }
+          .print-letterhead p  { font-size: 7.5pt; color: #555; margin-top: 2px; }
+          .print-sign { margin-top: 24px; display: flex; justify-content: flex-end; font-size: 8pt; }
+          .print-sign div { text-align: center; width: 180px; }
+          .print-sign .sign-box { margin-top: 48px; border-top: 1px solid #111; padding-top: 2px; }
+        }
+        @media screen { .print-header { display: none; } .print-sign { display: none; } }
+      `}</style>
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 print:gap-0 print:max-w-none">
+        <div className="no-print"><AppNav /></div>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">Rekap Pribadi</p>
             <h1 className="mt-3 text-3xl font-bold text-zinc-900">Rekap Saya</h1>
           </div>
-          <div className="flex items-center gap-3 print:hidden">
+          <div className="flex items-center gap-3">
             <label htmlFor="month" className="text-xs font-semibold text-zinc-500">Periode</label>
             <input id="month" type="month" value={month} onChange={(event) => { setLoading(true); setMonth(event.target.value); }} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900" />
             <button type="button" onClick={downloadExport} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">Export Excel</button>
-            <button type="button" onClick={() => window.print()} className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700">Cetak</button>
+            <button type="button" onClick={() => window.print()} className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700">Cetak / PDF</button>
           </div>
         </header>
 

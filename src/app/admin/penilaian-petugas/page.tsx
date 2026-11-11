@@ -65,7 +65,7 @@ export default function StaffEvaluationPage() {
       </section>
       <section className="print-card rounded-3xl border border-white/70 bg-white/80 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-zinc-900">Rincian Penilaian — {roleName(role)}</h2>
-        <p className="mt-1 text-xs text-zinc-500">Checkout menjumlahkan isian petugas; antrean selesai menjadi pembanding dan kredit antrean pengganti hanya ditambahkan pada hari tanpa checkout.</p>
+        <p className="mt-1 text-xs text-zinc-500">Checkout menjumlahkan isian petugas; antrean selesai menjadi pembanding dan kredit antrean pengganti hanya ditambahkan pada hari tanpa penugasan (dan tanpa checkout).</p>
         <div className="mt-4 overflow-auto">
           <table className="print-table min-w-full text-left text-xs text-zinc-700">
             <thead className="border-b border-zinc-200 text-[10px] uppercase tracking-wide text-zinc-500"><tr>

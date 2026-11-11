@@ -94,7 +94,8 @@ export async function getStaffEvaluation(month: { value: string; start: Date; en
     ratingBuckets.set(userId, bucket);
   }
   const items: EvaluationItem[] = Array.from(users.values()).map((user) => {
-    const assignmentsForUser = Array.from(assignedByUser.get(user.id) ?? []);
+    const assignedDays = assignedByUser.get(user.id) ?? new Set<string>();
+    const assignmentsForUser = Array.from(assignedDays);
     const scores = calculateDiscipline(assignmentsForUser, cellsByUser.get(user.id) ?? new Map());
     const rincian: Record<string, number | null> = role === "LAYANAN_PUBLIK"
       ? { publicNondataOffline: 0, publicComplaintsOffline: 0, publicNondataOnline: 0, publicSkdCount: 0 }
@@ -115,7 +116,11 @@ export async function getStaffEvaluation(month: { value: string; start: Date; en
     }
     let totalAntreanPengganti = 0;
     const queueDays = queuesByUser.get(user.id) ?? new Map<string, number>();
-    for (const [day, count] of queueDays) if (!checkoutDays.has(day)) totalAntreanPengganti += count;
+    for (const [day, count] of queueDays) {
+      if (!assignedDays.has(day) && !checkoutDays.has(day)) {
+        totalAntreanPengganti += count;
+      }
+    }
     const rating = ratingBuckets.get(user.id) ?? { total: 0, count: 0 };
     const ratingRataRata = rating.count ? rating.total / rating.count : 0;
     return {

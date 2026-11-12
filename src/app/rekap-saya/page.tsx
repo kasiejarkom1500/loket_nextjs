@@ -168,7 +168,7 @@ export default function MyRecapPage() {
           body { background: white !important; color: #111 !important; }
           .tracking-\\[0\\.2em\\], .tracking-\\[0\\.3em\\], .tracking-\\[0\\.15em\\] { letter-spacing: normal !important; }
           .no-print { display: none !important; }
-          .print-header { display: block !important; }
+          .print-header { display: block; }
           table { border-collapse: collapse; width: 100%; }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }

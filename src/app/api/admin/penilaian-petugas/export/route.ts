@@ -20,9 +20,10 @@ export async function GET(request: Request) {
     "User ID": item.userId, Nama: item.nama, "NIP Lama": item.nipLama,
     "Presensi (%)": item.disiplinPersen ?? "Tanpa Penugasan", "Status Presensi": item.disiplinStatus,
     "Total Layanan": item.totalLayanan, "Total Checkout": item.totalCheckout,
+    "Hari Tanpa Checkout": item.hariTanpaCheckout,
     "Total Antrean Pengganti": item.totalAntreanPengganti, "Skor Kinerja Relatif": item.kinerjaSkor,
-    "Antrean Selesai (Pembanding)": item.antreanSelesai, "Skor Rating": item.ratingSkor,
-    "Rata-rata Rating": item.ratingRataRata, "Jumlah Rating": item.ratingJumlah,
+    "Antrean Selesai (Pembanding)": item.antreanSelesai, "Skor Rating": Number(item.ratingSkor.toFixed(1)),
+    "Rata-rata Rating": Number(item.ratingRataRata.toFixed(2)), "Jumlah Rating": item.ratingJumlah,
     ...Object.fromEntries(detailKeys.map((key) => [key, !item.rincianCheckoutAda ? "-" : item.rincian[key] ?? 0])),
   }));
   const workbook = XLSX.utils.book_new();

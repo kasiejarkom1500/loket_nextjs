@@ -14,7 +14,7 @@ export function parseEvaluationMonth(value: string | null) {
 
 type EvaluationItem = {
   userId: number; nama: string; nipLama: string; disiplinPersen: number | null; disiplinStatus: string;
-  totalLayanan: number; totalCheckout: number; totalAntreanPengganti: number;
+  totalLayanan: number; totalCheckout: number; hariTanpaCheckout: number; totalAntreanPengganti: number;
   rincian: Record<string, number | null>; rincianCheckoutAda: boolean; kinerjaSkor: number; antreanSelesai: number;
   ratingSkor: number; ratingRataRata: number; ratingJumlah: number;
 };
@@ -121,12 +121,13 @@ export async function getStaffEvaluation(month: { value: string; start: Date; en
         totalAntreanPengganti += count;
       }
     }
+    const hariTanpaCheckout = assignmentsForUser.filter((day) => !cellsByUser.get(user.id)?.get(day)?.checkOutAt).length;
     const rating = ratingBuckets.get(user.id) ?? { total: 0, count: 0 };
     const ratingRataRata = rating.count ? rating.total / rating.count : 0;
     return {
       userId: user.id, nama: user.nama, nipLama: user.nipLama,
       disiplinPersen: scores.percentage, disiplinStatus: scores.status,
-      totalCheckout, totalAntreanPengganti, totalLayanan: totalCheckout + totalAntreanPengganti,
+      totalCheckout, hariTanpaCheckout, totalAntreanPengganti, totalLayanan: totalCheckout + totalAntreanPengganti,
       rincian, rincianCheckoutAda: checkoutDays.size > 0, kinerjaSkor: 0, antreanSelesai: queueCountByUser.get(user.id) ?? 0,
       ratingSkor: rating.count ? Math.min(100, 85 + ratingRataRata * 3) : 85,
       ratingRataRata, ratingJumlah: rating.count,

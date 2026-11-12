@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Role = "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
 type Item = {
   userId: number; nama: string; nipLama: string; disiplinPersen: number | null; disiplinStatus: string;
-  totalLayanan: number; totalCheckout: number; totalAntreanPengganti: number;
+  totalLayanan: number; totalCheckout: number; hariTanpaCheckout: number; totalAntreanPengganti: number;
   rincian: Record<string, number | null>; rincianCheckoutAda: boolean; kinerjaSkor: number; antreanSelesai: number;
   ratingSkor: number; ratingRataRata: number; ratingJumlah: number;
 };
@@ -69,19 +69,19 @@ export default function StaffEvaluationPage() {
         <div className="mt-4 overflow-auto">
           <table className="print-table min-w-full text-left text-xs text-zinc-700">
             <thead className="border-b border-zinc-200 text-[10px] uppercase tracking-wide text-zinc-500"><tr>
-              <th className="whitespace-nowrap py-3 pr-3">Nama / NIP Lama</th><th className="py-3 pr-3">Presensi</th><th className="py-3 pr-3">Total layanan</th><th className="py-3 pr-3">Checkout</th><th className="py-3 pr-3">Antrean pengganti</th>
+              <th className="whitespace-nowrap py-3 pr-3">Nama / NIP Lama</th><th className="py-3 pr-3">Presensi</th><th className="py-3 pr-3">Total layanan</th><th className="py-3 pr-3">Checkout</th><th className="py-3 pr-3">Hari tanpa checkout</th><th className="py-3 pr-3">Antrean pengganti</th>
               {componentKeys.map((key) => <th key={key} className="min-w-28 py-3 pr-3">{detailLabels[key]}</th>)}
               <th className="py-3 pr-3">Skor kinerja</th><th className="py-3 pr-3">Antrean selesai</th><th className="py-3 pr-3">Skor rating</th><th className="py-3 pr-3">Rata-rata / jumlah</th>
             </tr></thead>
             <tbody>
-              {loading ? <tr><td className="py-5 text-zinc-500" colSpan={13 + componentKeys.length}>Memuat penilaian…</td></tr>
+              {loading ? <tr><td className="py-5 text-zinc-500" colSpan={14 + componentKeys.length}>Memuat penilaian…</td></tr>
                 : items.length ? items.map((item) => <tr key={item.userId} className="border-b border-zinc-100 align-top">
                   <td className="whitespace-nowrap py-3 pr-3"><p className="font-semibold text-zinc-900">{item.nama}</p><p className="text-zinc-500">{item.nipLama || "-"}</p></td>
                   <td className="whitespace-nowrap py-3 pr-3">{item.disiplinPersen === null ? "Tanpa Penugasan" : <>{item.disiplinPersen}%<br /><span className="text-zinc-500">{item.disiplinStatus}</span></>}</td>
-                  <td className="py-3 pr-3 font-semibold">{item.totalLayanan}</td><td className="py-3 pr-3">{item.totalCheckout}</td><td className="py-3 pr-3">{item.totalAntreanPengganti}</td>
+                  <td className="py-3 pr-3 font-semibold">{item.totalLayanan}</td><td className="py-3 pr-3">{item.totalCheckout}</td><td className="py-3 pr-3">{item.hariTanpaCheckout}</td><td className="py-3 pr-3">{item.totalAntreanPengganti}</td>
                   {componentKeys.map((key) => <td key={key} className="py-3 pr-3">{!item.rincianCheckoutAda ? "—" : item.rincian[key] ?? 0}</td>)}
                   <td className="py-3 pr-3">{item.kinerjaSkor.toFixed(1)}%</td><td className="py-3 pr-3">{item.antreanSelesai}</td><td className="py-3 pr-3">{item.ratingSkor.toFixed(1)}</td><td className="whitespace-nowrap py-3 pr-3">{item.ratingRataRata.toFixed(2)} / {item.ratingJumlah}</td>
-                </tr>) : <tr><td className="py-5 text-zinc-500" colSpan={13 + componentKeys.length}>Belum ada data penilaian untuk bulan dan role ini.</td></tr>}
+                </tr>) : <tr><td className="py-5 text-zinc-500" colSpan={14 + componentKeys.length}>Belum ada data penilaian untuk bulan dan role ini.</td></tr>}
             </tbody>
           </table>
         </div>

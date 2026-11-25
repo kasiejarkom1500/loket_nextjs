@@ -39,19 +39,20 @@ export async function POST(request: Request) {
   }
 
   let role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null = "ADMIN";
+  const adminLevel = user.adminLevel;
   let shift: "PAGI" | "SIANG" | null = null;
   let assignmentId: number | null = null;
   let counterId: number | null = null;
   let isSubstitute = false;
 
   if (mode === "admin") {
-    if (!user.isAdmin) {
+    if (!adminLevel) {
       return NextResponse.json(
         { error: "Akun bukan admin." },
         { status: 403 },
       );
     }
-  } else {
+  } else if (adminLevel !== "ADMIN_PENILAIAN") {
     const loginEligibleShifts = await getLoginEligibleShifts();
     const currentShift = loginEligibleShifts[0] ?? (await getCurrentShift());
     const { start, end } = getTodayRange();
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
         .find(Boolean);
 
     if (!assignment) {
-      if (user.isAdmin) {
+      if (adminLevel === "ADMIN_OPERASIONAL" || adminLevel === "SUPER_ADMIN") {
         const substituteRole = body?.substituteRole;
         if (substituteRole !== "LAYANAN_PUBLIK" && substituteRole !== "PERMINTAAN_DATA") {
           const counters = await prisma.counter.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
       role,
       shift,
       assignmentId,
-      isAdmin: user.isAdmin,
+      adminLevel,
       ...(isSubstitute ? { isSubstitute: true } : {}),
     },
     SESSION_SECONDS,
@@ -142,6 +143,7 @@ export async function POST(request: Request) {
     ok: true,
     counterId,
     role,
+    adminLevel,
     nama: user.nama,
     mode,
   });

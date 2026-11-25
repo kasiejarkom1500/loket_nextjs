@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:admin-levels": "node scripts/migrate-admin-levels.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

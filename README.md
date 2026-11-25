@@ -65,12 +65,29 @@ Catatan:
 - Jika pakai service account JSON, cukup isi `FIREBASE_SERVICE_ACCOUNT_PATH`.
 - Pastikan file JSON tidak dikomit (sudah di `.gitignore`).
 
-3. Push schema + generate client
+3. Database migration
+
+Untuk instalasi baru, jalankan migration deploy (baseline + migration admin levels), lalu generate client:
 
 ```bash
-npx prisma db push
+npx prisma migrate deploy
 npx prisma generate
 ```
+
+Untuk database existing yang sebelumnya dikelola dengan `prisma db push`, backup dahulu dan review schema terhadap baseline `20261118000000_baseline`. Karena belum ada tabel `_prisma_migrations`, baseline jangan dijalankan sebagai create-table. Setelah memastikan schema cocok, tandai baseline sebagai applied:
+
+```bash
+npx prisma migrate resolve --applied 20261118000000_baseline
+```
+
+Migration data memerlukan username Super Admin pertama, yang ditentukan oleh env `SUPER_ADMIN_USERNAME`. Pastikan username ini ada dan `isAdmin=true` sebelum migrate. Jalankan:
+
+```bash
+npm run migrate:admin-levels
+npx prisma generate
+```
+
+Runner berhenti bila env kosong, username tidak menunjuk tepat satu admin lama, atau DB tidak aman untuk migrate. Admin lama lain menjadi `ADMIN_OPERASIONAL`; akun yang ditunjuk menjadi `SUPER_ADMIN`; user non-admin menjadi Petugas (`adminLevel = null`).
 
 4. Seed data (services, counters, admin)
 

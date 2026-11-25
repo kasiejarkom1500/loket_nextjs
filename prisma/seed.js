@@ -44,22 +44,22 @@ async function main() {
   }
 
   const adminHash = await bcrypt.hash("admin123", 10);
-  await prisma.user.upsert({
-    where: { username: "admin" },
-    update: {
-      nama: "Administrator",
-      nipLama: "0000000001",
-      password: adminHash,
-      isAdmin: true,
-    },
-    create: {
-      nama: "Administrator",
-      nipLama: "0000000001",
-      username: "admin",
-      password: adminHash,
-      isAdmin: true,
-    },
-  });
+  const initialAdminUsername = process.env.SUPER_ADMIN_USERNAME?.trim();
+  if (!initialAdminUsername) {
+    throw new Error("SUPER_ADMIN_USERNAME wajib diisi sebelum seed membuat akun administrator pertama.");
+  }
+  const seededAdmin = await prisma.user.findUnique({ where: { username: initialAdminUsername }, select: { id: true } });
+  if (!seededAdmin) {
+    await prisma.user.create({
+      data: {
+        nama: "Administrator",
+        nipLama: "0000000001",
+        username: initialAdminUsername,
+        password: adminHash,
+        adminLevel: "SUPER_ADMIN",
+      },
+    });
+  }
 }
 
 main()

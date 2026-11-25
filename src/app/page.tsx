@@ -6,6 +6,7 @@ type Profile = {
   nama: string;
   username: string;
   role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA";
+  adminLevel?: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
   counterId?: number | null;
 };
 
@@ -113,6 +114,14 @@ const ADMIN_MENU: MenuItem[] = [
     href: "/admin/attendance-recap",
     color: "from-rose-500 to-pink-600",
     accent: "bg-rose-50 border-rose-200 hover:border-rose-300",
+  },
+  {
+    icon: "🏅",
+    title: "Penilaian Petugas",
+    desc: "Lihat penilaian kinerja, presensi, dan rating petugas.",
+    href: "/admin/penilaian-petugas",
+    color: "from-indigo-500 to-violet-600",
+    accent: "bg-indigo-50 border-indigo-200 hover:border-indigo-300",
   },
   {
     icon: "💬",
@@ -382,7 +391,11 @@ export default function HomePage() {
 
   let menuItems: MenuItem[];
   if (profile.role === "ADMIN") {
-    menuItems = ADMIN_MENU;
+    menuItems = profile.adminLevel === "ADMIN_PENILAIAN"
+      ? ADMIN_MENU.filter((item) => item.href === "/admin/penilaian-petugas")
+      : profile.adminLevel === "SUPER_ADMIN"
+        ? ADMIN_MENU
+        : ADMIN_MENU.filter((item) => item.href !== "/admin/penilaian-petugas");
   } else if (profile.role === "LAYANAN_PUBLIK") {
     const cid = profile.counterId;
     menuItems = PUBLIC_OFFICER_MENU.map((item) => {

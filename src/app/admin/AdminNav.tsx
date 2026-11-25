@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
+const operationalNavItems = [
   { href: "/admin/assignments", label: "Penugasan", icon: "📋" },
   { href: "/admin/services", label: "Layanan", icon: "🔧" },
   { href: "/admin/users", label: "User", icon: "👥" },
@@ -12,7 +12,6 @@ const navItems = [
   { href: "/admin/visitors", label: "Pengunjung", icon: "👤" },
   { href: "/admin/rating-recap", label: "Rekap Rating", icon: "⭐" },
   { href: "/admin/attendance-recap", label: "Rekap Presensi", icon: "📊" },
-  { href: "/admin/penilaian-petugas", label: "Penilaian Petugas", icon: "🏅" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: "WA" },
   { href: "/online-requests", label: "Permintaan Online", icon: "💬" },
   { href: "/profile", label: "Akun", icon: "👤" },
@@ -33,6 +32,7 @@ export default function AdminNav() {
     nama: string;
     username: string;
     role: string;
+    adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
   } | null>(null);
 
   useEffect(() => {
@@ -51,6 +51,14 @@ export default function AdminNav() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
+
+  const navItems = !profile
+    ? operationalNavItems
+    : profile.adminLevel === "ADMIN_PENILAIAN"
+    ? [{ href: "/admin/penilaian-petugas", label: "Penilaian Petugas", icon: "🏅" }]
+    : profile.adminLevel === "SUPER_ADMIN"
+      ? [{ href: "/admin/penilaian-petugas", label: "Penilaian Petugas", icon: "🏅" }, ...operationalNavItems]
+      : operationalNavItems;
 
   return (
     <nav className="flex flex-col gap-3">

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     isSubstituteEligible: false,
   }));
   if (role === "PERMINTAAN_DATA") {
-    const admins = await prisma.user.findMany({ where: { isAdmin: true }, select: { id: true, nama: true, nipLama: true }, orderBy: { nama: "asc" } });
+    const admins = await prisma.user.findMany({ where: { adminLevel: { in: ["SUPER_ADMIN", "ADMIN_OPERASIONAL"] } }, select: { id: true, nama: true, nipLama: true }, orderBy: { nama: "asc" } });
     for (const admin of admins) {
       if (!users.some((candidate) => candidate.id === admin.id)) {
         users.push({ ...admin, isSubstituteEligible: true });

@@ -8,6 +8,7 @@ type Profile = {
   nama: string;
   username: string;
   role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
+  adminLevel?: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
   counterId?: number | null;
   isSubstitute?: boolean;
 };
@@ -97,7 +98,12 @@ function AppNavInner() {
   // Build nav items based on role
   let navItems: NavItem[];
   if (profile.role === "ADMIN") {
-    navItems = ADMIN_NAV;
+    const operationMenus = ADMIN_NAV.filter((item) => item.href !== "/admin/penilaian-petugas");
+    navItems = profile.adminLevel === "ADMIN_PENILAIAN"
+      ? [{ href: "/admin/penilaian-petugas", label: "Penilaian Petugas", icon: "🏅" }]
+      : profile.adminLevel === "SUPER_ADMIN"
+        ? [{ href: "/admin/penilaian-petugas", label: "Penilaian Petugas", icon: "🏅" }, ...operationMenus]
+        : operationMenus;
   } else if (profile.role === "LAYANAN_PUBLIK") {
     const cid = profile.counterId;
     navItems = [

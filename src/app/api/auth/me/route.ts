@@ -14,6 +14,7 @@ export async function GET() {
         nama: session.nama,
         username: session.username,
         role: session.role,
+        adminLevel: session.adminLevel ?? null,
         counterId: session.counterId,
         isSubstitute: session.isSubstitute ?? false,
       },

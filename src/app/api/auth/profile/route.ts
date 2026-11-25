@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
       role: session.role,
       shift: session.shift,
       assignmentId: session.assignmentId,
-      isAdmin: updated.isAdmin,
+      adminLevel: updated.adminLevel,
     },
     SESSION_SECONDS,
   );
@@ -101,6 +101,7 @@ export async function PUT(request: Request) {
       nama: updated.nama,
       username: updated.username,
       role: session.role,
+      adminLevel: updated.adminLevel,
       counterId: session.counterId,
     },
   });

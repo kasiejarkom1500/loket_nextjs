@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const users = await prisma.user.findMany({
-    where: { isAdmin: false },
+    where: { adminLevel: null },
     orderBy: { nama: "asc" },
     select: {
       id: true,

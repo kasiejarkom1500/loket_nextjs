@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySession } from "./src/lib/auth";
+import { getAdminHomePath, isEvaluationAdmin, isOperationalAdmin, verifySession } from "./src/lib/auth";
 
 const SESSION_COOKIE = "loket_session";
 
@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/profile")) {
     const session = await getSession(request);
-    if (!session) {
+    if (!session || (session.role === "ADMIN" && !session.adminLevel)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -98,8 +98,8 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith("/api/my-recap")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      if (session?.role === "ADMIN") {
-        return NextResponse.redirect(new URL("/admin/attendance-recap", request.url));
+      if (session?.role === "ADMIN" && session.adminLevel) {
+        return NextResponse.redirect(new URL(getAdminHomePath(session.adminLevel), request.url));
       }
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
@@ -109,12 +109,24 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const session = await getSession(request);
-    if (!session || !session.isAdmin) {
-      if (pathname.startsWith("/api/admin")) {
+    const isApi = pathname.startsWith("/api/admin");
+    const isEvaluationPath =
+      pathname === "/admin/penilaian-petugas" ||
+      pathname.startsWith("/admin/penilaian-petugas/") ||
+      pathname === "/api/admin/penilaian-petugas" ||
+      pathname.startsWith("/api/admin/penilaian-petugas/");
+    const allowed = isEvaluationPath
+      ? isEvaluationAdmin(session?.adminLevel)
+      : isOperationalAdmin(session?.adminLevel);
+
+    if (!session || !allowed) {
+      if (isApi) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      const loginUrl = new URL("/login", request.url);
-      return NextResponse.redirect(loginUrl);
+      if (session?.role === "ADMIN" && session.adminLevel) {
+        return NextResponse.redirect(new URL(getAdminHomePath(session.adminLevel), request.url));
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 

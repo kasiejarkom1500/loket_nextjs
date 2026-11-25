@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { cookies } from "next/headers";
+import { verifySession, isEvaluationAdmin } from "@/lib/auth";
 import { getStaffEvaluation, parseEvaluationMonth, type EvaluationRole } from "@/lib/staff-evaluation";
 
+async function hasEvaluationAccess() {
+  const token = (await cookies()).get("loket_session")?.value;
+  if (!token) return false;
+  try { return isEvaluationAdmin((await verifySession(token)).adminLevel); } catch { return false; }
+}
+
 export async function GET(request: Request) {
+  if (!(await hasEvaluationAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(request.url);
   const month = parseEvaluationMonth(url.searchParams.get("month"));
   const roleValue = url.searchParams.get("role");

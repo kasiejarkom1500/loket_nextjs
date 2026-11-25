@@ -55,8 +55,8 @@ export async function POST(request: Request) {
       },
     });
 
-    const dataOfficer = !dataAssignment ? await prisma.user.findUnique({ where: { id: dataOfficerId }, select: { isAdmin: true } }) : null;
-    if (!dataAssignment && !dataOfficer?.isAdmin) {
+    const dataOfficer = !dataAssignment ? await prisma.user.findUnique({ where: { id: dataOfficerId }, select: { adminLevel: true } }) : null;
+    if (!dataAssignment && dataOfficer?.adminLevel !== "ADMIN_OPERASIONAL" && dataOfficer?.adminLevel !== "SUPER_ADMIN") {
       return NextResponse.json(
         { error: "Petugas permintaan data tidak aktif" },
         { status: 400 },

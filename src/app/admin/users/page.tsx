@@ -7,8 +7,9 @@ type User = {
   nama: string;
   username: string;
   nipLama: string;
-  isAdmin: boolean;
+  adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
   counterId: number | null;
+  canManageAdminLevels?: boolean;
 };
 
 type Counter = {
@@ -23,7 +24,7 @@ const emptyForm = {
   username: "",
   password: "",
   counterId: "",
-  isAdmin: false,
+  adminLevel: null as User["adminLevel"],
 };
 
 export default function AdminUsersPage() {
@@ -38,6 +39,7 @@ export default function AdminUsersPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [canManageAdminLevels, setCanManageAdminLevels] = useState(false);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -45,6 +47,7 @@ export default function AdminUsersPage() {
       if (!response.ok) return;
       const data = await response.json();
       setUsers(data.users ?? []);
+      setCanManageAdminLevels(Boolean(data.canManageAdminLevels));
     };
     const loadCounters = async () => {
       const response = await fetch("/api/counters");
@@ -74,7 +77,6 @@ export default function AdminUsersPage() {
     );
   }, [users, query]);
 
-  useEffect(() => { setPage(1); }, [query]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = useMemo(
     () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -97,7 +99,7 @@ export default function AdminUsersPage() {
       username: user.username,
       password: "",
       counterId: user.counterId ? String(user.counterId) : "",
-      isAdmin: user.isAdmin,
+      adminLevel: user.adminLevel,
     });
     setStatus(null);
     setModalOpen(true);
@@ -119,7 +121,7 @@ export default function AdminUsersPage() {
       nipLama: form.nipLama,
       username: form.username,
       password: form.password,
-      isAdmin: form.isAdmin,
+      ...(canManageAdminLevels ? { adminLevel: form.adminLevel } : {}),
       counterId: form.counterId ? Number(form.counterId) : null,
     };
     const response = await fetch("/api/admin/users", {
@@ -183,7 +185,7 @@ export default function AdminUsersPage() {
             </svg>
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               placeholder="Cari nama, username, NIP..."
             />
@@ -215,7 +217,7 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Nama</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Username</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">NIP Lama</th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Admin</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Level Admin</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Loket</th>
                 <th className="sticky right-0 bg-zinc-50/90 px-4 py-3 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Aksi</th>
               </tr>
@@ -227,14 +229,8 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-3.5 text-sm font-semibold text-zinc-900">{user.nama}</td>
                     <td className="px-4 py-3.5 font-mono text-xs text-zinc-600">{user.username}</td>
                     <td className="px-4 py-3.5 text-xs text-zinc-500">{user.nipLama || "-"}</td>
-                    <td className="px-4 py-3.5">
-                      {user.isAdmin ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Ya
-                        </span>
-                      ) : (
-                        <span className="text-xs text-zinc-400">Tidak</span>
-                      )}
+                    <td className="px-4 py-3.5 text-xs text-zinc-600">
+                      {user.adminLevel ?? "Petugas"}
                     </td>
                     <td className="px-4 py-3.5 text-xs text-zinc-500">
                       {user.counterId ? counterMap.get(user.counterId) ?? `Loket ${user.counterId}` : "-"}
@@ -339,10 +335,18 @@ export default function AdminUsersPage() {
                     {counters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 transition hover:border-zinc-300">
-                  <input type="checkbox" checked={form.isAdmin} onChange={(e) => setForm((f) => ({ ...f, isAdmin: e.target.checked }))} className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500" />
-                  <span className="text-sm font-medium text-zinc-700">Jadikan admin</span>
-                </label>
+                {canManageAdminLevels ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">Level Admin (Super Admin saja)</label>
+                    <select value={form.adminLevel ?? ""} onChange={(event) => setForm((current) => ({ ...current, adminLevel: (event.target.value || null) as User["adminLevel"] }))} className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                      <option value="">Petugas</option>
+                      <option value="SUPER_ADMIN">Super Admin</option>
+                      <option value="ADMIN_PENILAIAN">Admin Penilaian</option>
+                      <option value="ADMIN_OPERASIONAL">Admin Operasional</option>
+                    </select>
+                    <p className="text-[11px] text-zinc-500">Level akun sendiri tetap tidak dapat diubah.</p>
+                  </div>
+                ) : null}
               </div>
 
               {status && modalOpen ? (

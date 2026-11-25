@@ -8,7 +8,7 @@ function SearchableUserSelect({
   value,
   onChange,
 }: {
-  users: { id: number; nama: string; username: string; isAdmin: boolean }[];
+  users: { id: number; nama: string; username: string; adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null }[];
   value: string;
   onChange: (v: string) => void;
 }) {
@@ -107,7 +107,7 @@ function SearchableUserSelect({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{u.nama}</p>
                     <p className="truncate text-[10px] text-zinc-400">
-                      {u.username}{u.isAdmin ? " · Admin" : ""}
+                      {u.username}{u.adminLevel ? ` · ${u.adminLevel}` : ""}
                     </p>
                   </div>
                   {String(u.id) === value && (
@@ -127,7 +127,7 @@ function SearchableUserSelect({
   );
 }
 
-type User = { id: number; nama: string; username: string; nipLama: string; isAdmin: boolean };
+type User = { id: number; nama: string; username: string; nipLama: string; adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null };
 type Counter = { id: number; name: string };
 type ShiftSetting = {
   shift: "PAGI" | "SIANG";

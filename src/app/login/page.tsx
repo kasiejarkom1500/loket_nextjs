@@ -84,6 +84,7 @@ function LoginForm() {
     const data = (await response.json()) as {
       counterId: number | null;
       role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
+      adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
       mode: "admin" | "staff";
     };
     const redirect = searchParams.get("redirect");
@@ -91,8 +92,9 @@ function LoginForm() {
       router.replace(redirect);
       return;
     }
+
     if (data.role === "ADMIN") {
-      router.replace("/admin/assignments");
+      router.replace(data.adminLevel === "ADMIN_PENILAIAN" ? "/admin/penilaian-petugas" : data.adminLevel === "SUPER_ADMIN" ? "/admin/assignments" : "/admin/attendance-recap");
       return;
     }
     if (data.role === "PERMINTAAN_DATA") {
@@ -125,16 +127,17 @@ function LoginForm() {
     const data = (await response.json()) as {
       counterId: number | null;
       role: "ADMIN" | "LAYANAN_PUBLIK" | "PERMINTAAN_DATA" | null;
+      adminLevel: "SUPER_ADMIN" | "ADMIN_PENILAIAN" | "ADMIN_OPERASIONAL" | null;
       mode: "admin" | "staff";
     };
 
     const redirect = searchParams.get("redirect");
-    if (redirect) {
+    if (redirect && data.role !== "ADMIN") {
       router.replace(redirect);
       return;
     }
     if (data.role === "ADMIN") {
-      router.replace("/admin/assignments");
+      router.replace(data.adminLevel === "ADMIN_PENILAIAN" ? "/admin/penilaian-petugas" : data.adminLevel === "SUPER_ADMIN" ? "/admin/assignments" : "/admin/attendance-recap");
       return;
     }
     if (data.role === "PERMINTAAN_DATA") {
